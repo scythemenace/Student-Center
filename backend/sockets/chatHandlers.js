@@ -8,8 +8,13 @@ module.exports = (socket, io, users) => {
 
   socket.on("chatMessage", (data) => {
     const sender = users[socket.id];
+    if (!sender) {
+      console.error("Chat sender not found:", socket.id);
+      return;
+    }
 
-    // Broadcast to nearby users
+    console.log(`User ${socket.id} sent message: ${data.message}`);
+
     for (const [id, user] of Object.entries(users)) {
       if (id !== socket.id && isWithinProximity(sender, user)) {
         io.to(id).emit("chatMessage", {
