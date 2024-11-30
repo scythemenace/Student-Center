@@ -28,9 +28,8 @@ const PixiCanvas = () => {
     const background = new PIXI.TilingSprite(
       tileTexture,
       app.screen.width,
-      app.screen.height
+      app.screen.height,
     );
-
     // Add the tiling background to the stage
     app.stage.addChild(background);
 
@@ -41,7 +40,6 @@ const PixiCanvas = () => {
       background.height = app.screen.height;
     };
     window.addEventListener("resize", resizeHandler);
-
     // Create the bookshelf
     const bookshelf = PIXI.Sprite.from(bookshelfImage);
     bookshelf.anchor.set(0.5); // Center anchor for better positioning
@@ -51,7 +49,7 @@ const PixiCanvas = () => {
 
     // Create the local player sprite
     const localSprite = PIXI.Sprite.from(
-      "https://pixijs.io/examples/examples/assets/bunny.png"
+      "https://pixijs.io/examples/examples/assets/bunny.png",
     );
     localSprite.anchor.set(0.5);
     localSprite.x = Math.floor(app.screen.width / 2 / tileSize) * tileSize; // Centered horizontally
@@ -74,11 +72,11 @@ const PixiCanvas = () => {
       // Keep localSprite within bounds
       localSprite.x = Math.max(
         0,
-        Math.min(app.screen.width - tileSize, localSprite.x)
+        Math.min(app.screen.width - tileSize, localSprite.x),
       );
       localSprite.y = Math.max(
         0,
-        Math.min(app.screen.height - tileSize, localSprite.y)
+        Math.min(app.screen.height - tileSize, localSprite.y),
       );
 
       // Notify the server of the local player's movement
@@ -92,7 +90,7 @@ const PixiCanvas = () => {
         if (!otherSprite) {
           // Create a sprite for the new player
           otherSprite = PIXI.Sprite.from(
-            "https://pixijs.io/examples/examples/assets/bunny.png"
+            "https://pixijs.io/examples/examples/assets/bunny.png",
           );
           otherSprite.anchor.set(0.5);
           app.stage.addChild(otherSprite);
