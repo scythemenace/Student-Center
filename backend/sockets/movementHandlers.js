@@ -4,10 +4,11 @@ module.exports = (socket, io, users) => {
       console.error("Invalid move data:", data);
       return;
     }
-
+  socket.on("playerMove", (data) => {
     // Update user's position
     users[socket.id].x = data.x;
     users[socket.id].y = data.y;
+    users[socket.id].direction = data.direction;
 
     console.log(`User ${socket.id} moved to (${data.x}, ${data.y})`);
 
@@ -16,6 +17,7 @@ module.exports = (socket, io, users) => {
       userId: socket.id,
       x: data.x,
       y: data.y,
+      direction: data.direction,
     });
   });
 };

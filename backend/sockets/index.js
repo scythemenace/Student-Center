@@ -1,3 +1,5 @@
+// socket/index.js
+
 const movementHandlers = require("./movementHandlers");
 const chatHandlers = require("./chatHandlers");
 
@@ -10,11 +12,16 @@ function setupSocket(io) {
     // Add the user to the state
     users[socket.id] = { x: 0, y: 0, direction: "down" };
 
-    // Set up individual event handlers
+    socket.emit("currentUsers", users);
+
+    socket.broadcast.emit("userConnected", {
+      userId: socket.id,
+      ...users[socket.id],
+    });
+
     movementHandlers(socket, io, users);
     chatHandlers(socket, io, users);
 
-    // Notify others of disconnection
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${socket.id}`);
       delete users[socket.id];
