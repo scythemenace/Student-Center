@@ -7,7 +7,8 @@ import bookshelfImage from "./assets/bookshelf.png"; // Bookshelf image
 const PixiCanvas = () => {
     const pixiContainer = useRef(null);
     const [socket, setSocket] = useState(null);
-    const [users, setUsers] = useState({}); // Keep track of all users' positions
+    const userSprites = useRef({}); // Store sprites for all users
+    const tileSize = 32; // Size of each tile
 
     useEffect(() => {
         const newSocket = io("http://localhost:3000"); // Replace with your backend URL
@@ -22,9 +23,6 @@ const PixiCanvas = () => {
             pixiContainer.current.appendChild(app.view);
         }
 
-        const tileSize = 128; // Corrected size of each tile
-        const userSprites = {}; // Store sprites for all users
-
         // Create the tiling background
         const tileTexture = PIXI.Texture.from(flooringImage);
         const background = new PIXI.TilingSprite(
@@ -32,7 +30,7 @@ const PixiCanvas = () => {
             app.screen.width,
             app.screen.height
         );
-        background.tileScale.set(tileSize / tileTexture.width, tileSize / tileTexture.height); // Scale tiles correctly
+        background.tileScale.set(tileSize / tileTexture.width, tileSize / tileTexture.height);
         app.stage.addChild(background);
 
         // Create the bookshelf
@@ -49,7 +47,10 @@ const PixiCanvas = () => {
         localSprite.y = Math.floor(app.screen.height / 2 / tileSize) * tileSize; // Centered vertically
         app.stage.addChild(localSprite);
 
-        // Update local player position on movement
+        // Notify the server about the new player
+        newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
+
+        // Movement state
         const movement = { left: false, right: false, up: false, down: false };
         const speed = tileSize;
 
@@ -64,28 +65,33 @@ const PixiCanvas = () => {
             localSprite.y = Math.max(0, Math.min(app.screen.height - tileSize, localSprite.y));
 
             // Notify the server of the local player's movement
-            if (socket) {
-                socket.emit("playerMove", { x: localSprite.x, y: localSprite.y });
-            }
+            newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
         };
 
         // Handle other players' movements
-        const updateOtherPlayers = (data) => {
-            Object.keys(data).forEach((userId) => {
-                if (userId !== socket.id) {
-                    if (!userSprites[userId]) {
-                        // Create a sprite for a new player
-                        const newSprite = PIXI.Sprite.from("https://pixijs.io/examples/examples/assets/bunny.png");
-                        newSprite.anchor.set(0.5);
-                        app.stage.addChild(newSprite);
-                        userSprites[userId] = newSprite;
-                    }
-                    // Update the sprite's position
-                    userSprites[userId].x = data[userId].x;
-                    userSprites[userId].y = data[userId].y;
+        newSocket.on("userMoved", (data) => {
+            if (data.userId !== newSocket.id) {
+                let otherSprite = userSprites.current[data.userId];
+                if (!otherSprite) {
+                    // Create a sprite for the new player
+                    otherSprite = PIXI.Sprite.from("https://pixijs.io/examples/examples/assets/bunny.png");
+                    otherSprite.anchor.set(0.5);
+                    app.stage.addChild(otherSprite);
+                    userSprites.current[data.userId] = otherSprite;
                 }
-            });
-        };
+                // Update the position of the other player
+                otherSprite.x = data.x;
+                otherSprite.y = data.y;
+            }
+        });
+
+        newSocket.on("userDisconnected", (data) => {
+            const { userId } = data;
+            if (userSprites.current[userId]) {
+                app.stage.removeChild(userSprites.current[userId]); // Remove the sprite from the stage
+                delete userSprites.current[userId];
+            }
+        });
 
         // Resize handler
         const resizeHandler = () => {
@@ -145,20 +151,6 @@ const PixiCanvas = () => {
                     break;
             }
         };
-
-        // Socket event listeners
-        newSocket.on("currentUsers", (data) => {
-            setUsers(data); // Update state for all users
-            updateOtherPlayers(data); // Update other players in PIXI
-        });
-
-        newSocket.on("userDisconnected", (data) => {
-            const { userId } = data;
-            if (userSprites[userId]) {
-                app.stage.removeChild(userSprites[userId]); // Remove the sprite from the stage
-                delete userSprites[userId];
-            }
-        });
 
         // Attach event listeners
         window.addEventListener("keydown", handleKeyDown);

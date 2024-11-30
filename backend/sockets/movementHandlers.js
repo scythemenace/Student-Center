@@ -1,9 +1,16 @@
 module.exports = (socket, io, users) => {
+  socket.on("move", (data) => {
+    if (data.x === undefined || data.y === undefined) {
+      console.error("Invalid move data:", data);
+      return;
+    }
   socket.on("playerMove", (data) => {
     // Update user's position
     users[socket.id].x = data.x;
     users[socket.id].y = data.y;
     users[socket.id].direction = data.direction;
+
+    console.log(`User ${socket.id} moved to (${data.x}, ${data.y})`);
 
     // Broadcast movement to others
     socket.broadcast.emit("userMoved", {
