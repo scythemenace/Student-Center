@@ -1,8 +1,8 @@
-import React from 'react';
-import PixiCanvas from './PixiCanvas.jsx';
+import React from "react";
+import PixiCanvas from "./PixiCanvas.jsx";
 
 const App = () => {
-    return <PixiCanvas />;
+  return <PixiCanvas />;
 };
 
 export default App;
