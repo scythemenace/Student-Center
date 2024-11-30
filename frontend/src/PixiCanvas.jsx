@@ -5,41 +5,39 @@ const PixiCanvas = () => {
     const pixiContainer = useRef(null);
 
     useEffect(() => {
-        // Create the PixiJS application
         const app = new PIXI.Application({
-            resizeTo: window, // Automatically resize to fill the window
-            backgroundColor: 0x1099bb, // Light blue background
+            resizeTo: window,
+            backgroundColor: 0x1099bb,
         });
 
-        // Append the PixiJS view (canvas) to the ref container
         if (pixiContainer.current) {
             pixiContainer.current.appendChild(app.view);
         }
 
-        // Create the sprite (character)
+        const tileSize = 32; // Step size for pixel movement
         const character = PIXI.Sprite.from('https://pixijs.io/examples/examples/assets/bunny.png');
-        character.x = app.screen.width / 2;
-        character.y = app.screen.height / 2;
+        character.x = Math.floor(app.screen.width / 2 / tileSize) * tileSize;
+        character.y = Math.floor(app.screen.height / 2 / tileSize) * tileSize;
         character.anchor.set(0.5);
         app.stage.addChild(character);
 
-        // Movement state
         const movement = { left: false, right: false, up: false, down: false };
-        const speed = 5; // Movement speed
+        const speed = tileSize;
+        let movementInterval = null;
+        const holdDelay = 250; // Initial delay in milliseconds before continuous movement
+        const repeatRate = 200; // Continuous movement speed in milliseconds
 
-        // Update character position based on key presses
-        const updateCharacterPosition = () => {
+        const moveCharacter = () => {
             if (movement.left) character.x -= speed;
             if (movement.right) character.x += speed;
             if (movement.up) character.y -= speed;
             if (movement.down) character.y += speed;
 
-            // Keep the character within bounds
-            character.x = Math.max(0, Math.min(app.screen.width, character.x));
-            character.y = Math.max(0, Math.min(app.screen.height, character.y));
+            // Ensure the character stays within bounds
+            character.x = Math.max(0, Math.min(app.screen.width - tileSize, character.x));
+            character.y = Math.max(0, Math.min(app.screen.height - tileSize, character.y));
         };
 
-        // Keyboard event listeners
         const handleKeyDown = (event) => {
             switch (event.code) {
                 case 'ArrowLeft':
@@ -60,6 +58,14 @@ const PixiCanvas = () => {
                     break;
                 default:
                     break;
+            }
+
+            if (!movementInterval) {
+                // Move character immediately and set up continuous movement with a delay
+                moveCharacter();
+                movementInterval = setTimeout(() => {
+                    movementInterval = setInterval(moveCharacter, repeatRate);
+                }, holdDelay);
             }
         };
 
@@ -84,25 +90,25 @@ const PixiCanvas = () => {
                 default:
                     break;
             }
+
+            // If no movement keys are pressed, clear the interval
+            if (!Object.values(movement).some(Boolean)) {
+                clearInterval(movementInterval);
+                movementInterval = null;
+            }
         };
 
-        // Add event listeners
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
 
-        // Game loop for movement
-        app.ticker.add(updateCharacterPosition);
-
-        // Cleanup on component unmount
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
-            app.ticker.remove(updateCharacterPosition);
+            clearInterval(movementInterval);
             app.destroy(true, true);
         };
     }, []);
 
-    // Full-screen container
     return <div ref={pixiContainer} style={{ width: '100vw', height: '100vh', overflow: 'hidden' }} />;
 };
 
