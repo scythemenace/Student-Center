@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import * as PIXI from "pixi.js";
 import { io } from "socket.io-client";
-import flooringImage from "./assets/floor.png"; // Flooring image
+import flooringImage from "./assets/floor2.png"; // Flooring image
 import bookshelfImage from "./assets/bookshelf.png"; // Bookshelf image
 
 const PixiCanvas = () => {
@@ -113,8 +113,8 @@ const PixiCanvas = () => {
       background.height = app.screen.height;
 
       // Update bookshelf position relative to the new screen size
-      bookshelf.x = app.screen.width * 0.2;
-      bookshelf.y = app.screen.height * 0.4;
+      //bookshelf.x = app.screen.width * 0.2;
+      //bookshelf.y = app.screen.height * 0.4;
     };
 
     // Event listeners for movement
