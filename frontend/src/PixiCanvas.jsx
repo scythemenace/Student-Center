@@ -465,6 +465,28 @@ const PixiCanvas = () => {
 
 		// WebRTC Connection Creation
 		const createPeerConnection = (targetId) => {
+			const pc = new RTCPeerConnection(configuration);
+
+			// Add a state check before setting descriptions
+			const safeSetLocalDescription = async (description) => {
+				if (
+					pc.signalingState === "stable" ||
+					pc.signalingState === "have-remote-offer"
+				) {
+					try {
+						await pc.setLocalDescription(description);
+					} catch (error) {
+						console.error("Failed to set local description:", error);
+					}
+				} else {
+					console.warn(
+						`Cannot set local description. Current state: ${pc.signalingState}`
+					);
+				}
+			};
+
+			// Modify offer and answer creation to use this safe method
+			pc.createOffer().then((offer) => safeSetLocalDescription(offer));
 			const configuration = {
 				iceServers: [
 					{ urls: "stun:stun.l.google.com:19302" },
