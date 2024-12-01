@@ -39,7 +39,7 @@ const PixiCanvas = () => {
 			console.log("Initializing PeerJS with ID:", id);
 
 			const newPeer = new Peer(id, {
-				host: "your-backend-domain.com", // Replace with your backend's domain or IP
+				host: "https://student-center-ba.onrender.com", // Replace with your backend's domain or IP
 				port: 443, // Use 443 for HTTPS or the port your backend is running on
 				path: "/peerjs",
 				secure: true, // Set to true if using HTTPS
