@@ -38,7 +38,7 @@ const PixiCanvas = () => {
 
 			// Option 1: Use public PeerJS server
 			const newPeer = new Peer(id, {
-				host: "peer.connection.dev", // Reliable public PeerJS server
+				host: "peer.js.cloud", // Reliable public PeerJS server
 				port: 443,
 				path: "/",
 				secure: true,
