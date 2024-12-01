@@ -1,4 +1,4 @@
-# **Real-Time Collaborative Environment**
+# **Viniculum**
 
 ## **Table of Contents**
 1. [Introduction](#introduction)
