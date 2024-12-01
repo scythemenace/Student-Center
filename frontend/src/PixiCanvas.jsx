@@ -30,7 +30,7 @@ const PixiCanvas = () => {
 	useEffect(() => {
 		const backendUrl =
 			process.env.REACT_APP_BACKEND_URL ||
-			"https://student-center-129q.onrender.com";
+			"https://student-center-ba.onrender.com";
 		const newSocket = io(backendUrl, {
 			transports: ["websocket"],
 		});
