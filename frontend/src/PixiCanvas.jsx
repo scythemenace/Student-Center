@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import * as PIXI from "pixi.js";
 import { io } from "socket.io-client";
+
 import flooringImage from "./assets/floor2.png"; // Flooring image
 import bookshelfImage from "./assets/bookshelf.png"; // Bookshelf image
 import bookshelfv2Image from "./assets/bookshelf_v2.png"; // Bookshelf image
@@ -21,16 +22,59 @@ import tablev3Image from "./assets/table_v3.png"; // Table image
 import tablev4Image from "./assets/table_v4.png"; // Table image
 
 
+// Remove PeerJS import
+// import Peer from "peerjs"; // Remove this line
+import flooringImage from "./assets/floor2.png";
+import bookshelfImage from "./assets/bookshelf.png";
+import bookshelfv2Image from "./assets/bookshelf_v2.png";
+import bookshelfv3Image from "./assets/bookshelf_v3.png";
+import bookshelfv4Image from "./assets/bookshelf_v4.png";
+import carpetImage from "./assets/carpet.png";
+import pianoImage from "./assets/piano.png";
+
+
 const PixiCanvas = () => {
 	const pixiContainer = useRef(null);
 	const [socket, setSocket] = useState(null);
-	const userSprites = useRef({}); // Store sprites for all users
-	const tileSize = 32; // Size of each tile
+	const userSprites = useRef({});
+	const peerConnections = useRef({});
+	const userStreams = useRef({});
+	const tileSize = 32;
+
+	// Player's own data
+	const localSpriteRef = useRef(null);
+	const localStreamRef = useRef(null);
+
+	// Constants for audio
+	const SOUND_CUTOFF_RANGE = 200; // Maximum distance to hear others
+	const SOUND_NEAR_RANGE = 50; // Distance for maximum volume
 
 	useEffect(() => {
-		const newSocket = io("http://localhost:3000"); // Replace with your backend URL
+		const backendUrl =
+			process.env.REACT_APP_BACKEND_URL ||
+			"https://student-center-ba.onrender.com";
+
+		const newSocket = io(backendUrl, {
+			transports: ["websocket"],
+		});
 		setSocket(newSocket);
 
+		// Get user media
+		const getUserMedia = async () => {
+			try {
+				const stream = await navigator.mediaDevices.getUserMedia({
+					audio: true,
+				});
+				localStreamRef.current = stream;
+				console.log("Microphone access granted");
+			} catch (err) {
+				console.error("Error accessing microphone:", err);
+			}
+		};
+
+		getUserMedia();
+
+		// Initialize PIXI application
 		const app = new PIXI.Application({
 			resizeTo: window,
 			backgroundColor: 0x1099bb,
@@ -40,85 +84,23 @@ const PixiCanvas = () => {
 			pixiContainer.current.appendChild(app.view);
 		}
 
-		// Create the tiling background
+		// Add background
 		const tileTexture = PIXI.Texture.from(flooringImage);
 		const background = new PIXI.TilingSprite(
 			tileTexture,
 			app.screen.width,
 			app.screen.height
 		);
-		// Add the tiling background to the stage
 		app.stage.addChild(background);
 
-		// Carpet textures for the plus sign
-		const carpetTexture = PIXI.Texture.from(carpetImage);
-
-		// Function to create a horizontal strip
-		const createHorizontalStrip = (yOffset) => {
-			const strip = new PIXI.TilingSprite(
-				carpetTexture,
-				app.screen.width, // Full screen width
-				tileSize // Fixed height for the carpet
-			);
-			strip.tileScale.set(0.1); // Adjust the scale to show the full carpet
-			strip.anchor.set(0.5);
-			strip.x = app.screen.width / 2;
-			strip.y = app.screen.height / 2 + yOffset;
-			return strip;
-		};
-
-		// Function to create a vertical strip
-		const createVerticalStrip = (xOffset) => {
-			const strip = new PIXI.TilingSprite(
-				carpetTexture,
-				tileSize, // Fixed width for the carpet
-				app.screen.height // Full screen height
-			);
-			strip.tileScale.set(0.1); // Adjust the scale to show the full carpet
-			strip.anchor.set(0.5);
-			strip.x = app.screen.width / 2 + xOffset;
-			strip.y = app.screen.height / 2;
-			return strip;
-		};
-
-		// Create and add horizontal strips
-		const horizontalStrips = [
-			createHorizontalStrip(-tileSize),
-			createHorizontalStrip(0),
-			createHorizontalStrip(tileSize),
-		];
-		horizontalStrips.forEach((strip) => app.stage.addChild(strip));
-
-		// Create and add vertical strips
-		const verticalStrips = [
-			createVerticalStrip(-tileSize),
-			createVerticalStrip(0),
-			createVerticalStrip(tileSize),
-		];
-		verticalStrips.forEach((strip) => app.stage.addChild(strip));
-
-		// Resize handler to adjust the tiling background and carpet on window resize
+		// Resize handler
 		const resizeHandler = () => {
 			app.renderer.resize(window.innerWidth, window.innerHeight);
-
-			// Resize the floor background
 			background.width = app.screen.width;
 			background.height = app.screen.height;
-
-			// Resize and reposition the carpet strips
-			horizontalStrips.forEach((strip, index) => {
-				strip.width = app.screen.width; // Full screen width
-				strip.x = app.screen.width / 2;
-				strip.y = app.screen.height / 2 + (index - 1) * tileSize;
-			});
-
-			verticalStrips.forEach((strip, index) => {
-				strip.height = app.screen.height; // Full screen height
-				strip.x = app.screen.width / 2 + (index - 1) * tileSize;
-				strip.y = app.screen.height / 2;
-			});
 		};
 		window.addEventListener("resize", resizeHandler);
+
 		// Create the bookshelf
 		const bookshelf1 = PIXI.Sprite.from(bookshelfImage);
 		bookshelf1.anchor.set(0.5); // Center anchor for better positioning
@@ -291,25 +273,148 @@ const PixiCanvas = () => {
 		rug.x = app.screen.width * 0.35; // Relative position: 20% from the left
 		rug.y = app.screen.height * 0.35; // Relative position: 40% from the top
 		app.stage.addChild(rug);
-		
-		
-		
+	
 
-		// Create the local player sprite
+		// Create local player sprite
+
 		const localSprite = PIXI.Sprite.from(
 			"https://pixijs.io/examples/examples/assets/bunny.png"
 		);
 		localSprite.anchor.set(0.5);
 		localSprite.width = 40;
 		localSprite.height = 60;
-		localSprite.x = Math.floor(app.screen.width / 2 / tileSize) * tileSize; // Centered horizontally
-		localSprite.y = Math.floor(app.screen.height / 2 / tileSize) * tileSize; // Centered vertically
+		localSprite.x = Math.floor(app.screen.width / 2 / tileSize) * tileSize;
+		localSprite.y = Math.floor(app.screen.height / 2 / tileSize) * tileSize;
 		app.stage.addChild(localSprite);
+		localSpriteRef.current = localSprite;
 
-		// Notify the server about the new player
-		newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
+		newSocket.on("connect", () => {
+			console.log("Socket.IO connected with ID:", newSocket.id);
+			newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
+		});
 
-		// Movement state
+		// Handle incoming signaling data
+		newSocket.on("signal", async (data) => {
+			const { from, signalData } = data;
+			let pc = peerConnections.current[from];
+
+			if (!pc) {
+				pc = createPeerConnection(from);
+				peerConnections.current[from] = pc;
+			}
+
+			if (signalData.type === "offer") {
+				await pc.setRemoteDescription(new RTCSessionDescription(signalData));
+				const answer = await pc.createAnswer();
+				await pc.setLocalDescription(answer);
+				newSocket.emit("signal", {
+					to: from,
+					signalData: pc.localDescription,
+				});
+			} else if (signalData.type === "answer") {
+				await pc.setRemoteDescription(new RTCSessionDescription(signalData));
+			} else if (signalData.candidate) {
+				await pc.addIceCandidate(new RTCIceCandidate(signalData));
+			}
+		});
+
+		newSocket.on("userMoved", (data) => {
+			if (data.userId !== newSocket.id) {
+				let otherSprite = userSprites.current[data.userId];
+				if (!otherSprite) {
+					otherSprite = PIXI.Sprite.from(
+						"https://pixijs.io/examples/examples/assets/bunny.png"
+					);
+					otherSprite.anchor.set(0.5);
+					otherSprite.width = 40;
+					otherSprite.height = 60;
+					app.stage.addChild(otherSprite);
+					userSprites.current[data.userId] = otherSprite;
+
+					// Initiate WebRTC connection
+					initiateConnection(data.userId);
+				}
+				otherSprite.x = data.x;
+				otherSprite.y = data.y;
+			}
+		});
+
+		newSocket.on("userDisconnected", (data) => {
+			const { userId } = data;
+			if (userSprites.current[userId]) {
+				app.stage.removeChild(userSprites.current[userId]);
+				delete userSprites.current[userId];
+			}
+			if (userStreams.current[userId]) {
+				userStreams.current[userId].audio.pause();
+				userStreams.current[userId].audio.srcObject = null;
+				delete userStreams.current[userId];
+			}
+			if (peerConnections.current[userId]) {
+				peerConnections.current[userId].close();
+				delete peerConnections.current[userId];
+			}
+		});
+
+		const createPeerConnection = (targetId) => {
+			const pc = new RTCPeerConnection({
+				iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+			});
+
+			// Add local stream tracks
+			localStreamRef.current?.getTracks().forEach((track) => {
+				pc.addTrack(track, localStreamRef.current);
+			});
+
+			// Handle ICE candidates
+			pc.onicecandidate = (event) => {
+				if (event.candidate) {
+					newSocket.emit("signal", {
+						to: targetId,
+						signalData: event.candidate,
+					});
+				}
+			};
+
+			// Handle remote stream
+			pc.ontrack = (event) => {
+				const [remoteStream] = event.streams;
+				if (!userStreams.current[targetId]) {
+					userStreams.current[targetId] = {
+						stream: remoteStream,
+						audio: createAudioElement(remoteStream),
+					};
+				}
+			};
+
+			return pc;
+		};
+
+		const initiateConnection = async (targetId) => {
+			const pc = createPeerConnection(targetId);
+			peerConnections.current[targetId] = pc;
+
+			const offer = await pc.createOffer();
+			await pc.setLocalDescription(offer);
+			newSocket.emit("signal", {
+				to: targetId,
+				signalData: pc.localDescription,
+			});
+		};
+
+		const createAudioElement = (stream) => {
+			const audio = new Audio();
+			audio.srcObject = stream;
+			audio.autoplay = true;
+			audio.muted = false;
+			audio.volume = 1;
+			audio.play().catch((error) => {
+				console.error("Error playing audio:", error);
+			});
+			return audio;
+		};
+
+		// Movement handling
 		const movement = { left: false, right: false, up: false, down: false };
 		const speed = tileSize;
 
@@ -332,35 +437,6 @@ const PixiCanvas = () => {
 			// Notify the server of the local player's movement
 			newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
 		};
-
-		// Handle other players' movements
-		newSocket.on("userMoved", (data) => {
-			if (data.userId !== newSocket.id) {
-				let otherSprite = userSprites.current[data.userId];
-				if (!otherSprite) {
-					// Create a sprite for the new player
-					otherSprite = PIXI.Sprite.from(
-						"https://pixijs.io/examples/examples/assets/bunny.png"
-					);
-					otherSprite.anchor.set(0.5);
-					otherSprite.width = 40;
-					otherSprite.height = 60;
-					app.stage.addChild(otherSprite);
-					userSprites.current[data.userId] = otherSprite;
-				}
-				// Update the position of the other player
-				otherSprite.x = data.x;
-				otherSprite.y = data.y;
-			}
-		});
-
-		newSocket.on("userDisconnected", (data) => {
-			const { userId } = data;
-			if (userSprites.current[userId]) {
-				app.stage.removeChild(userSprites.current[userId]); // Remove the sprite from the stage
-				delete userSprites.current[userId];
-			}
-		});
 
 		// Event listeners for movement
 		const handleKeyDown = (event) => {
@@ -418,9 +494,18 @@ const PixiCanvas = () => {
 		return () => {
 			newSocket.close();
 			app.destroy(true, true);
+			window.removeEventListener("resize", resizeHandler);
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
-			window.removeEventListener("resize", resizeHandler);
+
+			Object.values(userStreams.current).forEach((userStream) => {
+				userStream.audio.pause();
+				userStream.audio.srcObject = null;
+			});
+
+			Object.values(peerConnections.current).forEach((pc) => {
+				pc.close();
+			});
 		};
 	}, []);
 
