@@ -12,7 +12,7 @@
 
 ## **Introduction**
 
-This project is a **real-time collaborative environment** built using modern web technologies. It supports multiple users interacting within a shared virtual space. Users can:
+Viniculum is a **real-time collaborative environment** built using modern web technologies. It supports multiple users interacting within a shared virtual space. Users can:
 
 - Move their avatars within the environment in real time, with movements synchronized using **WebSockets**.
 - Engage in voice chat with others using **WebRTC**.
