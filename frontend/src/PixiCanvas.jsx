@@ -36,9 +36,9 @@ const PixiCanvas = () => {
 		const initPeer = (id) => {
 			console.log("Initializing PeerJS with ID:", id);
 
-			// Option 1: Use public PeerJS server
-			const newPeer = new Peer(id, {
-				host: "peer.js.cloud", // Reliable public PeerJS server
+			const newPeer = new Peer({
+				id: id,
+				host: "peerjs.com", // Use a reliable public PeerJS server
 				port: 443,
 				path: "/",
 				secure: true,
@@ -51,16 +51,12 @@ const PixiCanvas = () => {
 
 			newPeer.on("error", (err) => {
 				console.error("PeerJS error:", err);
-
-				// Fallback strategy if first connection fails
-				if (err.type === "unavailable-id" || err.type === "invalid-id") {
-					const fallbackId = `peer_${Math.random().toString(36).substring(7)}`;
-					console.log("Trying fallback ID:", fallbackId);
-					initPeer(fallbackId);
-				}
 			});
 
-			return newPeer;
+			setPeer(newPeer);
+
+			// Handle incoming calls
+			newPeer.on("call", handleIncomingCall);
 		};
 
 		const handleIncomingCall = (call) => {
