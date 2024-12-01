@@ -21,6 +21,14 @@ import tablev2Image from "./assets/table_2.png"; // Table image
 import rugImage from "./assets/rug.png"; // Table image
 import tablev3Image from "./assets/table_v3.png"; // Table image
 import tablev4Image from "./assets/table_v4.png"; // Table image
+import sofaImage from "./assets/sofa.png"; // Sofa image
+import sofa2Image from "./assets/sofaright.png"; // Sofa image
+import sofa3Image from "./assets/sofaleft.png"; // Sofa image
+import plantImage from "./assets/plant.png"; // Plant image
+import plant2Image from "./assets/plant_2.png"; // Plant image
+import rug2Image from "./assets/rug_2.png"; // Plant image
+import chessImage from "./assets/chess.png"; // Chess image
+import christmasImage from "./assets/christmas.png"; // Christmas image
 
 const PixiCanvas = () => {
 	const pixiContainer = useRef(null);
@@ -40,8 +48,8 @@ const PixiCanvas = () => {
 
 	useEffect(() => {
 		const backendUrl =
-			process.env.REACT_APP_BACKEND_URL ||
-			"https://student-center-ba.onrender.com";
+			process.env.VITE_APP_BACKEND_URL ||
+			"http://localhost:3000";
 
 		const newSocket = io(backendUrl, {
 			transports: ["websocket"],
@@ -205,23 +213,23 @@ const PixiCanvas = () => {
 		pool.anchor.set(0.5); // Center anchor for better positioning
 		pool.width = 201;
 		pool.height = 132;
-		pool.x = app.screen.width * 0.8; // Relative position: 20% from the left
-		pool.y = app.screen.height * 0.117; // Relative position: 40% from the top
+		pool.x = app.screen.width * 0.75; // Relative position: 20% from the left
+		pool.y = app.screen.height * 0.30; // Relative position: 40% from the top
 		app.stage.addChild(pool);
 
 		const arcade = PIXI.Sprite.from(arcadeImage);
 		arcade.anchor.set(0.5); // Center anchor for better positioning
 		arcade.width = 400;
 		arcade.height = 400;
-		arcade.x = app.screen.width * 0.7; // Relative position: 20% from the left
-		arcade.y = app.screen.height * 0.117; // Relative position: 40% from the top
+		arcade.x = app.screen.width * 0.6; // Relative position: 20% from the left
+		arcade.y = app.screen.height * 0.110; // Relative position: 40% from the top
 		app.stage.addChild(arcade);
 
 		const clock = PIXI.Sprite.from(clockImage);
 		clock.anchor.set(0.5); // Center anchor for better positioning
 		clock.width = 36.3;
 		clock.height = 134.31;
-		clock.x = app.screen.width * 0.18; // Relative position: 20% from the left
+		clock.x = app.screen.width * 0.20; // Relative position: 20% from the left
 		clock.y = app.screen.height * 0.1; // Relative position: 40% from the top
 		app.stage.addChild(clock);
 
@@ -312,6 +320,75 @@ const PixiCanvas = () => {
 		rug.x = app.screen.width * 0.35; // Relative position: 20% from the left
 		rug.y = app.screen.height * 0.35; // Relative position: 40% from the top
 		app.stage.addChild(rug);
+
+		const sofa = PIXI.Sprite.from(sofaImage);
+		sofa.anchor.set(0.5); // Center anchor for better positioning
+		sofa.width = 96;
+		sofa.height = 60;
+		sofa.x = app.screen.width * 0.7; // Relative position: 20% from the left
+		sofa.y = app.screen.height * 0.7; // Relative position: 40% from the top
+		app.stage.addChild(sofa);
+
+		const sofa2 = PIXI.Sprite.from(sofa2Image);
+		sofa2.anchor.set(0.5); // Center anchor for better positioning
+		sofa2.width = 700;
+		sofa2.height = 700;
+		sofa2.x = app.screen.width * 0.76; // Relative position: 20% from the left
+		sofa2.y = app.screen.height * 0.85; // Relative position: 40% from the top
+		app.stage.addChild(sofa2);
+
+		const sofa3 = PIXI.Sprite.from(sofa3Image);
+		sofa3.anchor.set(0.5); // Center anchor for better positioning
+		sofa3.width = 700;
+		sofa3.height = 700;
+		sofa3.x = app.screen.width * 0.65; // Relative position: 20% from the left
+		sofa3.y = app.screen.height * 0.85; // Relative position: 40% from the top
+		app.stage.addChild(sofa3);
+
+
+		const plant = PIXI.Sprite.from(plantImage);
+		plant.anchor.set(0.5); // Center anchor for better positioning
+		plant.width = 512;
+		plant.height = 512;
+		plant.x = app.screen.width * 0.63; // Relative position: 20% from the left
+		plant.y = app.screen.height * 0.85; // Relative position: 40% from the top
+		app.stage.addChild(plant);
+
+		const plant2 = PIXI.Sprite.from(plant2Image);
+		plant2.anchor.set(0.5); // Center anchor for better positioning
+		plant2.width = 512;
+		plant2.height = 512;
+		plant2.x = app.screen.width * 0.76; // Relative position: 20% from the left
+		plant2.y = app.screen.height * 0.85; // Relative position: 40% from the top
+		app.stage.addChild(plant2);
+
+		const rug2 = PIXI.Sprite.from(rug2Image);
+		rug2.anchor.set(0.5); // Center anchor for better positioning
+		rug2.width = 512;
+		rug2.height = 512;
+		rug2.x = app.screen.width * 0.87; // Relative position: 20% from the left
+		rug2.y = app.screen.height * 0.85; // Relative position: 40% from the top
+		app.stage.addChild(rug2);
+
+
+		const chess = PIXI.Sprite.from(chessImage);
+		chess.anchor.set(0.5); // Center anchor for better positioning
+		chess.width = 512;
+		chess.height = 512;
+		chess.x = app.screen.width * 0.715; // Relative position: 20% from the left
+		chess.y = app.screen.height * 0.85; // Relative position: 40% from the top
+		app.stage.addChild(chess);
+
+
+
+		const christmas = PIXI.Sprite.from(christmasImage);
+		christmas.anchor.set(0.5); // Center anchor for better positioning
+		christmas.width = 512;
+		christmas.height = 512;
+		christmas.x = app.screen.width * 0.91; // Relative position: 20% from the left
+		christmas.y = app.screen.height * 0.75; // Relative position: 40% from the top
+		app.stage.addChild(christmas);
+
 
 		// Create local player sprite
 		const localSprite = PIXI.Sprite.from(
