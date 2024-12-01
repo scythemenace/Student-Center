@@ -8,8 +8,8 @@ const socketIo = require("socket.io");
 const { ExpressPeerServer } = require("peer"); // Import the PeerServer
 const setupSocket = require("./sockets");
 require("dotenv").config();
-const privateKey = fs.readFileSync("/path/to/your/private.key", "utf8");
-const certificate = fs.readFileSync("/path/to/your/certificate.crt", "utf8");
+const privateKey = fs.readFileSync("./key.pem", "utf8");
+const certificate = fs.readFileSync("./cert.pem", "utf8");
 const credentials = { key: privateKey, cert: certificate };
 
 // Use CORS
