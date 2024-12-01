@@ -35,55 +35,32 @@ const PixiCanvas = () => {
 
 		const initPeer = (id) => {
 			console.log("Initializing PeerJS with ID:", id);
+
+			// Option 1: Use public PeerJS server
 			const newPeer = new Peer(id, {
-				host: "peerjs.com", // Use the public PeerJS server
+				host: "peer.connection.dev", // Reliable public PeerJS server
 				port: 443,
 				path: "/",
 				secure: true,
-				debug: 3,
+				debug: 2, // Reduced debug level for cleaner logs
 			});
 
-			newPeer.on("open", () => {
-				console.log("Peer connection open with ID:", newPeer.id);
-			});
-
-			newPeer.on("error", (err) => {
-				console.error("PeerJS error:", err);
-				// Optionally, generate a random ID if the current one fails
-				if (err.type === "unavailable-id") {
-					const randomId = `peer_${Math.random().toString(36).substring(7)}`;
-					console.log("Trying alternative ID:", randomId);
-					initPeer(randomId);
-				}
-			});
-
-			newPeer.on("call", async (call) => {
-				console.log("Received call from:", call.peer);
-				try {
-					const stream = await navigator.mediaDevices.getUserMedia({
-						audio: true,
-					});
-					console.log("Microphone access granted for incoming call");
-					call.answer(stream);
-					handleIncomingCall(call);
-				} catch (err) {
-					console.error("Error accessing microphone:", err);
-				}
+			newPeer.on("open", (peerId) => {
+				console.log("Peer connection open with ID:", peerId);
 			});
 
 			newPeer.on("error", (err) => {
 				console.error("PeerJS error:", err);
+
+				// Fallback strategy if first connection fails
+				if (err.type === "unavailable-id" || err.type === "invalid-id") {
+					const fallbackId = `peer_${Math.random().toString(36).substring(7)}`;
+					console.log("Trying fallback ID:", fallbackId);
+					initPeer(fallbackId);
+				}
 			});
 
-			newPeer.on("disconnected", () => {
-				console.warn("PeerJS disconnected");
-			});
-
-			newPeer.on("close", () => {
-				console.warn("PeerJS connection closed");
-			});
-
-			setPeer(newPeer);
+			return newPeer;
 		};
 
 		const handleIncomingCall = (call) => {
