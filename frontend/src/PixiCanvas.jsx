@@ -47,8 +47,14 @@ const PixiCanvas = () => {
 				console.log("Peer connection open with ID:", newPeer.id);
 			});
 
-			newPeer.on("open", () => {
-				console.log("Peer connection open with ID:", newPeer.id);
+			newPeer.on("error", (err) => {
+				console.error("PeerJS error:", err);
+				// Optionally, generate a random ID if the current one fails
+				if (err.type === "unavailable-id") {
+					const randomId = `peer_${Math.random().toString(36).substring(7)}`;
+					console.log("Trying alternative ID:", randomId);
+					initPeer(randomId);
+				}
 			});
 
 			newPeer.on("call", async (call) => {
