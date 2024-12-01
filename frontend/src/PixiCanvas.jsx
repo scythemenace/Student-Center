@@ -221,7 +221,7 @@ const PixiCanvas = () => {
 		clock.anchor.set(0.5); // Center anchor for better positioning
 		clock.width = 36.3;
 		clock.height = 134.31;
-		clock.x = app.screen.width * 0.18; // Relative position: 20% from the left
+		clock.x = app.screen.width * 0.2; // Relative position: 20% from the left
 		clock.y = app.screen.height * 0.1; // Relative position: 40% from the top
 		app.stage.addChild(clock);
 
