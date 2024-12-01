@@ -37,12 +37,10 @@ const PixiCanvas = () => {
 	const peerConnections = useRef({});
 	const userStreams = useRef({});
 	const tileSize = 32;
-	const localSprite = PIXI.Sprite.from(randomCharacter);
 
 	// Player's own data
 	const localSpriteRef = useRef(null);
 	const localStreamRef = useRef(null);
-	const [assignedCharacter, setAssignedCharacter] = useState(null);
 
 	// Constants for audio
 	const SOUND_CUTOFF_RANGE = 200; // Maximum distance to hear others
@@ -82,17 +80,6 @@ const PixiCanvas = () => {
 		if (pixiContainer.current) {
 			pixiContainer.current.appendChild(app.view);
 		}
-
-		// Assign a random character to the user
-		const characterImages = [
-			character1Image,
-			character2Image,
-			character3Image,
-			character4Image,
-		  ];
-		  const randomCharacter =
-			characterImages[Math.floor(Math.random() * characterImages.length)];
-		  setAssignedCharacter(randomCharacter);
 
 		// Create the tiling background
 		const tileTexture = PIXI.Texture.from(flooringImage);
@@ -173,47 +160,6 @@ const PixiCanvas = () => {
 			});
 		};
 		window.addEventListener("resize", resizeHandler);
-
-		// Create local player sprite
-		localSprite.anchor.set(0.5);
-		localSprite.width = 40;
-		localSprite.height = 60;
-		localSprite.x = Math.floor(app.screen.width / 2 / tileSize) * tileSize;
-		localSprite.y = Math.floor(app.screen.height / 2 / tileSize) * tileSize;
-		app.stage.addChild(localSprite);
-		localSpriteRef.current = localSprite;
-
-		newSocket.on("connect", () => {
-			console.log("Socket.IO connected with ID:", newSocket.id);
-			newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
-		  });
-
-		newSocket.on("userMoved", (data) => {
-		if (data.userId !== newSocket.id) {
-			let otherSprite = userSprites.current[data.userId];
-			if (!otherSprite) {
-			const otherCharacter =
-				characterImages[Math.floor(Math.random() * characterImages.length)];
-			otherSprite = PIXI.Sprite.from(otherCharacter);
-			otherSprite.anchor.set(0.5);
-			otherSprite.width = 40;
-			otherSprite.height = 60;
-			app.stage.addChild(otherSprite);
-			userSprites.current[data.userId] = otherSprite;
-			}
-			otherSprite.x = data.x;
-			otherSprite.y = data.y;
-		}
-		});
-	
-		newSocket.on("userDisconnected", (data) => {
-		const { userId } = data;
-		if (userSprites.current[userId]) {
-			app.stage.removeChild(userSprites.current[userId]);
-			delete userSprites.current[userId];
-		}
-		});
-
 		// Create the bookshelf
 		const bookshelf1 = PIXI.Sprite.from(bookshelfImage);
 		bookshelf1.anchor.set(0.5); // Center anchor for better positioning
@@ -579,25 +525,27 @@ const PixiCanvas = () => {
 
 		// Movement handling
 		const movement = { left: false, right: false, up: false, down: false };
-    const speed = tileSize;
+		const speed = tileSize;
 
-    const moveLocalPlayer = () => {
-      if (movement.left) localSprite.x -= speed;
-      if (movement.right) localSprite.x += speed;
-      if (movement.up) localSprite.y -= speed;
-      if (movement.down) localSprite.y += speed;
+		const moveLocalPlayer = () => {
+			if (movement.left) localSprite.x -= speed;
+			if (movement.right) localSprite.x += speed;
+			if (movement.up) localSprite.y -= speed;
+			if (movement.down) localSprite.y += speed;
 
-      localSprite.x = Math.max(
-        0,
-        Math.min(app.screen.width - tileSize, localSprite.x)
-      );
-      localSprite.y = Math.max(
-        0,
-        Math.min(app.screen.height - tileSize, localSprite.y)
-      );
+			// Keep localSprite within bounds
+			localSprite.x = Math.max(
+				0,
+				Math.min(app.screen.width - tileSize, localSprite.x)
+			);
+			localSprite.y = Math.max(
+				0,
+				Math.min(app.screen.height - tileSize, localSprite.y)
+			);
 
-      newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
-    };
+			// Notify the server of the local player's movement
+			newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
+		};
 
 		// Event listeners for movement
 		const handleKeyDown = (event) => {
