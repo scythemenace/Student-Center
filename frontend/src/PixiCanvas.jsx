@@ -38,9 +38,8 @@ const PixiCanvas = () => {
 			const newPeer = new Peer(id, {
 				host: "student-center-ba.onrender.com",
 				port: 443,
-				path: "/peerjs",
-				key: "", // Prevent duplicate '/peerjs' in the URL
-				secure: true,
+				path: "/peerjs", // Correct path
+				secure: true, // Ensure HTTPS
 				debug: 3, // Verbose logging
 			});
 
