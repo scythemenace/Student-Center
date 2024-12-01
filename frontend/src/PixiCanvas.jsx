@@ -157,13 +157,13 @@ const PixiCanvas = () => {
 		piano.y = app.screen.height * 0.117; // Relative position: 40% from the top
 		app.stage.addChild(piano);
 
-		const pool = PIXI.Sprite.from(poolImage);
-		piano.anchor.set(0.5); // Center anchor for better positioning
-		piano.width = 1000;
-		piano.height = 1000;
-		piano.x = app.screen.width * 0.96; // Relative position: 20% from the left
-		piano.y = app.screen.height * 0.117; // Relative position: 40% from the top
-		app.stage.addChild(piano);
+		// const pool = PIXI.Sprite.from(poolImage);
+		// piano.anchor.set(0.5); // Center anchor for better positioning
+		// piano.width = 1000;
+		// piano.height = 1000;
+		// piano.x = app.screen.width * 0.96; // Relative position: 20% from the left
+		// piano.y = app.screen.height * 0.117; // Relative position: 40% from the top
+		// app.stage.addChild(piano);
 
 		// Create the local player sprite
 		const localSprite = PIXI.Sprite.from(
