@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState } from "react";
 import * as PIXI from "pixi.js";
 import { io } from "socket.io-client";
-import Peer from "peerjs"; // Import PeerJS
+// Remove PeerJS import
+// import Peer from "peerjs"; // Remove this line
 import flooringImage from "./assets/floor2.png";
 import bookshelfImage from "./assets/bookshelf.png";
 import bookshelfv2Image from "./assets/bookshelf_v2.png";
@@ -13,78 +14,42 @@ import pianoImage from "./assets/piano.png";
 const PixiCanvas = () => {
 	const pixiContainer = useRef(null);
 	const [socket, setSocket] = useState(null);
-	const [peer, setPeer] = useState(null);
 	const userSprites = useRef({});
+	const peerConnections = useRef({});
 	const userStreams = useRef({});
 	const tileSize = 32;
 
 	// Player's own data
 	const localSpriteRef = useRef(null);
-	const myPos = useRef({ x: 0, y: 0 });
-	const lastPos = useRef({ x: 0, y: 0 });
+	const localStreamRef = useRef(null);
 
 	// Constants for audio
 	const SOUND_CUTOFF_RANGE = 200; // Maximum distance to hear others
 	const SOUND_NEAR_RANGE = 50; // Distance for maximum volume
 
 	useEffect(() => {
-		const newSocket = io("https://student-center-ba.onrender.com", {
-			transports: ["websocket"], // Use WebSocket transport
+		const backendUrl =
+			process.env.REACT_APP_BACKEND_URL ||
+			"https://student-center-129q.onrender.com";
+		const newSocket = io(backendUrl, {
+			transports: ["websocket"],
 		});
 		setSocket(newSocket);
 
-		const initPeer = (id) => {
-			console.log("Initializing PeerJS with ID:", id);
-
-			const newPeer = new Peer({
-				id: id,
-				host: "peerjs.com", // Use a reliable public PeerJS server
-				port: 443,
-				path: "/",
-				secure: true,
-				debug: 2, // Reduced debug level for cleaner logs
-			});
-
-			newPeer.on("open", (peerId) => {
-				console.log("Peer connection open with ID:", peerId);
-			});
-
-			newPeer.on("error", (err) => {
-				console.error("PeerJS error:", err);
-			});
-
-			setPeer(newPeer);
-
-			// Handle incoming calls
-			newPeer.on("call", handleIncomingCall);
+		// Get user media
+		const getUserMedia = async () => {
+			try {
+				const stream = await navigator.mediaDevices.getUserMedia({
+					audio: true,
+				});
+				localStreamRef.current = stream;
+				console.log("Microphone access granted");
+			} catch (err) {
+				console.error("Error accessing microphone:", err);
+			}
 		};
 
-		const handleIncomingCall = (call) => {
-			console.log("Handling incoming call from:", call.peer);
-			call.on("stream", (remoteStream) => {
-				console.log("Received remote stream from:", call.peer);
-				userStreams.current[call.peer] = {
-					stream: remoteStream,
-					audio: createAudioElement(remoteStream),
-				};
-			});
-
-			call.on("error", (err) => {
-				console.error("Call error with", call.peer, ":", err);
-			});
-		};
-
-		const createAudioElement = (stream) => {
-			const audio = new Audio();
-			audio.srcObject = stream;
-			audio.autoplay = true;
-			audio.muted = false;
-			audio.volume = 1;
-			audio.play().catch((error) => {
-				console.error("Error playing audio:", error);
-			});
-			return audio;
-		};
+		getUserMedia();
 
 		// Initialize PIXI application
 		const app = new PIXI.Application({
@@ -124,16 +89,38 @@ const PixiCanvas = () => {
 		localSprite.y = Math.floor(app.screen.height / 2 / tileSize) * tileSize;
 		app.stage.addChild(localSprite);
 		localSpriteRef.current = localSprite;
-		myPos.current = { x: localSprite.x, y: localSprite.y };
 
 		newSocket.on("connect", () => {
 			console.log("Socket.IO connected with ID:", newSocket.id);
-			initPeer(newSocket.id);
 			newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
 		});
 
+		// Handle incoming signaling data
+		newSocket.on("signal", async (data) => {
+			const { from, signalData } = data;
+			let pc = peerConnections.current[from];
+
+			if (!pc) {
+				pc = createPeerConnection(from);
+				peerConnections.current[from] = pc;
+			}
+
+			if (signalData.type === "offer") {
+				await pc.setRemoteDescription(new RTCSessionDescription(signalData));
+				const answer = await pc.createAnswer();
+				await pc.setLocalDescription(answer);
+				newSocket.emit("signal", {
+					to: from,
+					signalData: pc.localDescription,
+				});
+			} else if (signalData.type === "answer") {
+				await pc.setRemoteDescription(new RTCSessionDescription(signalData));
+			} else if (signalData.candidate) {
+				await pc.addIceCandidate(new RTCIceCandidate(signalData));
+			}
+		});
+
 		newSocket.on("userMoved", (data) => {
-			console.log("User moved:", data.userId);
 			if (data.userId !== newSocket.id) {
 				let otherSprite = userSprites.current[data.userId];
 				if (!otherSprite) {
@@ -146,17 +133,8 @@ const PixiCanvas = () => {
 					app.stage.addChild(otherSprite);
 					userSprites.current[data.userId] = otherSprite;
 
-					if (peer && peer.open) {
-						startCall(data.userId);
-					} else {
-						console.warn(
-							"PeerJS not initialized yet, delaying call to",
-							data.userId
-						);
-						peer?.on("open", () => {
-							startCall(data.userId);
-						});
-					}
+					// Initiate WebRTC connection
+					initiateConnection(data.userId);
 				}
 				otherSprite.x = data.x;
 				otherSprite.y = data.y;
@@ -164,7 +142,6 @@ const PixiCanvas = () => {
 		});
 
 		newSocket.on("userDisconnected", (data) => {
-			console.log("User disconnected:", data.userId);
 			const { userId } = data;
 			if (userSprites.current[userId]) {
 				app.stage.removeChild(userSprites.current[userId]);
@@ -175,48 +152,161 @@ const PixiCanvas = () => {
 				userStreams.current[userId].audio.srcObject = null;
 				delete userStreams.current[userId];
 			}
+			if (peerConnections.current[userId]) {
+				peerConnections.current[userId].close();
+				delete peerConnections.current[userId];
+			}
 		});
 
-		const startCall = async (targetId) => {
-			if (!peer) {
-				console.warn("PeerJS not initialized yet");
-				return;
-			}
-			console.log("Attempting to start call with:", targetId);
-			try {
-				const stream = await navigator.mediaDevices.getUserMedia({
-					audio: true,
-				});
-				console.log("Microphone access granted");
-				const call = peer.call(targetId, stream);
-				console.log("Call initiated to:", targetId);
+		const createPeerConnection = (targetId) => {
+			const pc = new RTCPeerConnection({
+				iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+			});
 
-				call.on("stream", (remoteStream) => {
-					console.log("Received remote stream from:", targetId);
+			// Add local stream tracks
+			localStreamRef.current?.getTracks().forEach((track) => {
+				pc.addTrack(track, localStreamRef.current);
+			});
+
+			// Handle ICE candidates
+			pc.onicecandidate = (event) => {
+				if (event.candidate) {
+					newSocket.emit("signal", {
+						to: targetId,
+						signalData: event.candidate,
+					});
+				}
+			};
+
+			// Handle remote stream
+			pc.ontrack = (event) => {
+				const [remoteStream] = event.streams;
+				if (!userStreams.current[targetId]) {
 					userStreams.current[targetId] = {
 						stream: remoteStream,
 						audio: createAudioElement(remoteStream),
 					};
-				});
+				}
+			};
 
-				call.on("error", (err) => {
-					console.error("Call error with", targetId, ":", err);
-				});
-			} catch (err) {
-				console.error("Error accessing microphone:", err);
+			return pc;
+		};
+
+		const initiateConnection = async (targetId) => {
+			const pc = createPeerConnection(targetId);
+			peerConnections.current[targetId] = pc;
+
+			const offer = await pc.createOffer();
+			await pc.setLocalDescription(offer);
+			newSocket.emit("signal", {
+				to: targetId,
+				signalData: pc.localDescription,
+			});
+		};
+
+		const createAudioElement = (stream) => {
+			const audio = new Audio();
+			audio.srcObject = stream;
+			audio.autoplay = true;
+			audio.muted = false;
+			audio.volume = 1;
+			audio.play().catch((error) => {
+				console.error("Error playing audio:", error);
+			});
+			return audio;
+		};
+
+		// Movement handling
+		const movement = { left: false, right: false, up: false, down: false };
+		const speed = tileSize;
+
+		const moveLocalPlayer = () => {
+			if (movement.left) localSprite.x -= speed;
+			if (movement.right) localSprite.x += speed;
+			if (movement.up) localSprite.y -= speed;
+			if (movement.down) localSprite.y += speed;
+
+			// Keep localSprite within bounds
+			localSprite.x = Math.max(
+				0,
+				Math.min(app.screen.width - tileSize, localSprite.x)
+			);
+			localSprite.y = Math.max(
+				0,
+				Math.min(app.screen.height - tileSize, localSprite.y)
+			);
+
+			// Notify the server of the local player's movement
+			newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
+		};
+
+		// Event listeners for movement
+		const handleKeyDown = (event) => {
+			switch (event.code) {
+				case "ArrowLeft":
+				case "KeyA":
+					movement.left = true;
+					break;
+				case "ArrowRight":
+				case "KeyD":
+					movement.right = true;
+					break;
+				case "ArrowUp":
+				case "KeyW":
+					movement.up = true;
+					break;
+				case "ArrowDown":
+				case "KeyS":
+					movement.down = true;
+					break;
+				default:
+					break;
+			}
+			moveLocalPlayer();
+		};
+
+		const handleKeyUp = (event) => {
+			switch (event.code) {
+				case "ArrowLeft":
+				case "KeyA":
+					movement.left = false;
+					break;
+				case "ArrowRight":
+				case "KeyD":
+					movement.right = false;
+					break;
+				case "ArrowUp":
+				case "KeyW":
+					movement.up = false;
+					break;
+				case "ArrowDown":
+				case "KeyS":
+					movement.down = false;
+					break;
+				default:
+					break;
 			}
 		};
+
+		// Attach event listeners
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
 
 		// Cleanup
 		return () => {
 			newSocket.close();
-			peer?.destroy();
 			app.destroy(true, true);
 			window.removeEventListener("resize", resizeHandler);
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("keyup", handleKeyUp);
 
 			Object.values(userStreams.current).forEach((userStream) => {
 				userStream.audio.pause();
 				userStream.audio.srcObject = null;
+			});
+
+			Object.values(peerConnections.current).forEach((pc) => {
+				pc.close();
 			});
 		};
 	}, []);
