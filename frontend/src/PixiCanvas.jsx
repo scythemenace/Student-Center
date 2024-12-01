@@ -33,10 +33,93 @@ const PixiCanvas = () => {
 	// Player's own data
 	const localSpriteRef = useRef(null);
 	const localStreamRef = useRef(null);
+	const audioContextRef = useRef(null);
 
-	// Constants for audio
-	const SOUND_CUTOFF_RANGE = 200; // Maximum distance to hear others
-	const SOUND_NEAR_RANGE = 50; // Distance for maximum volume
+	// Browser support check
+	const isBrowserSupported = () => {
+		return !!(
+			navigator.mediaDevices &&
+			navigator.mediaDevices.getUserMedia &&
+			window.RTCPeerConnection
+		);
+	};
+
+	// Get user media with enhanced error handling
+	const getUserMedia = async () => {
+		if (!isBrowserSupported()) {
+			console.warn("Your browser does not fully support WebRTC");
+			return;
+		}
+
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({
+				audio: {
+					echoCancellation: true,
+					noiseSuppression: true,
+					autoGainControl: true,
+				},
+			});
+			localStreamRef.current = stream;
+
+			// Setup audio context for additional audio management
+			try {
+				const AudioContext = window.AudioContext || window.webkitAudioContext;
+				audioContextRef.current = new AudioContext();
+				const source = audioContextRef.current.createMediaStreamSource(stream);
+				const gainNode = audioContextRef.current.createGain();
+
+				source.connect(gainNode);
+				gainNode.connect(audioContextRef.current.destination);
+			} catch (contextError) {
+				console.error("Could not create audio context:", contextError);
+			}
+
+			console.log("Microphone access granted");
+		} catch (err) {
+			console.error("Error accessing microphone:", err);
+		}
+	};
+
+	// Create audio element with robust handling
+	const createAudioElement = (stream) => {
+		const audio = new Audio();
+
+		try {
+			audio.srcObject = stream;
+
+			audio.onerror = (error) => {
+				console.error("Audio element error:", error);
+			};
+
+			// Use modern browser APIs if available
+			if ("setSinkId" in audio) {
+				audio.setSinkId("default").catch((error) => {
+					console.warn("Unable to set default audio output:", error);
+				});
+			}
+
+			audio.autoplay = true;
+			audio.muted = false;
+
+			try {
+				audio.volume = 1;
+			} catch (volumeError) {
+				console.warn("Unable to set volume:", volumeError);
+			}
+
+			// Use Promise-based play with fallback
+			const playPromise = audio.play();
+			if (playPromise !== undefined) {
+				playPromise.catch((error) => {
+					console.error("Autoplay was prevented:", error);
+				});
+			}
+		} catch (setupError) {
+			console.error("Could not setup audio element:", setupError);
+		}
+
+		return audio;
+	};
 
 	useEffect(() => {
 		const backendUrl =
@@ -48,22 +131,10 @@ const PixiCanvas = () => {
 		});
 		setSocket(newSocket);
 
-		// Get user media
-		const getUserMedia = async () => {
-			try {
-				const stream = await navigator.mediaDevices.getUserMedia({
-					audio: true,
-				});
-				localStreamRef.current = stream;
-				console.log("Microphone access granted");
-			} catch (err) {
-				console.error("Error accessing microphone:", err);
-			}
-		};
-
+		// Call getUserMedia
 		getUserMedia();
 
-		// Initialize PIXI application
+		// Initialize PIXI application (previous implementation remains the same)
 		const app = new PIXI.Application({
 			resizeTo: window,
 			backgroundColor: 0x1099bb,
@@ -72,7 +143,6 @@ const PixiCanvas = () => {
 		if (pixiContainer.current) {
 			pixiContainer.current.appendChild(app.view);
 		}
-
 		// Create the tiling background
 		const tileTexture = PIXI.Texture.from(flooringImage);
 		const background = new PIXI.TilingSprite(
@@ -393,10 +463,22 @@ const PixiCanvas = () => {
 			}
 		});
 
+		// WebRTC Connection Creation
 		const createPeerConnection = (targetId) => {
-			const pc = new RTCPeerConnection({
-				iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-			});
+			const configuration = {
+				iceServers: [
+					{ urls: "stun:stun.l.google.com:19302" },
+					{
+						urls: "turn:your-turn-server.com",
+						username: "optional-username",
+						credential: "optional-credential",
+					},
+				],
+				sdpSemantics: "unified-plan",
+				bundlePolicy: "max-bundle",
+			};
+
+			const pc = new RTCPeerConnection(configuration);
 
 			// Add local stream tracks
 			localStreamRef.current?.getTracks().forEach((track) => {
@@ -527,9 +609,43 @@ const PixiCanvas = () => {
 		window.addEventListener("keydown", handleKeyDown);
 		window.addEventListener("keyup", handleKeyUp);
 
-		// Cleanup
+		// Signal Handling with Enhanced Error Management
+		newSocket.on("signal", async (data) => {
+			try {
+				const { from, signalData } = data;
+				let pc = peerConnections.current[from];
+
+				if (!pc) {
+					pc = createPeerConnection(from);
+					peerConnections.current[from] = pc;
+				}
+
+				if (signalData.type === "offer") {
+					await pc.setRemoteDescription(new RTCSessionDescription(signalData));
+					const answer = await pc.createAnswer();
+					await pc.setLocalDescription(answer);
+					newSocket.emit("signal", {
+						to: from,
+						signalData: pc.localDescription,
+					});
+				} else if (signalData.type === "answer") {
+					await pc.setRemoteDescription(new RTCSessionDescription(signalData));
+				} else if (signalData.candidate) {
+					await pc.addIceCandidate(new RTCIceCandidate(signalData));
+				}
+			} catch (error) {
+				console.error("WebRTC signaling error:", error);
+			}
+		});
+
+		// Cleanup function remains similar to the original
 		return () => {
 			newSocket.close();
+
+			// Close audio context
+			if (audioContextRef.current) {
+				audioContextRef.current.context.close();
+			}
 			app.destroy(true, true);
 			window.removeEventListener("resize", resizeHandler);
 			window.removeEventListener("keydown", handleKeyDown);
