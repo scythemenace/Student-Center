@@ -28,7 +28,7 @@ const PixiCanvas = () => {
 	const SOUND_NEAR_RANGE = 50; // Distance for maximum volume
 
 	useEffect(() => {
-		const newSocket = io("ws://student-center-ba.onrender.com", {
+		const newSocket = io("https://student-center-ba.onrender.com", {
 			transports: ["websocket"], // Use WebSocket transport
 		});
 		setSocket(newSocket);
