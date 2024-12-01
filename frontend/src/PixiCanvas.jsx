@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState } from "react";
 import * as PIXI from "pixi.js";
 import { io } from "socket.io-client";
-
+// Remove PeerJS import
+// import Peer from "peerjs"; // Remove this line
 import flooringImage from "./assets/floor2.png"; // Flooring image
 import bookshelfImage from "./assets/bookshelf.png"; // Bookshelf image
 import bookshelfv2Image from "./assets/bookshelf_v2.png"; // Bookshelf image
@@ -72,23 +73,85 @@ const PixiCanvas = () => {
 			pixiContainer.current.appendChild(app.view);
 		}
 
-		// Add background
+		// Create the tiling background
 		const tileTexture = PIXI.Texture.from(flooringImage);
 		const background = new PIXI.TilingSprite(
 			tileTexture,
 			app.screen.width,
 			app.screen.height
 		);
+		// Add the tiling background to the stage
 		app.stage.addChild(background);
 
-		// Resize handler
+		// Carpet textures for the plus sign
+		const carpetTexture = PIXI.Texture.from(carpetImage);
+
+		// Function to create a horizontal strip
+		const createHorizontalStrip = (yOffset) => {
+			const strip = new PIXI.TilingSprite(
+				carpetTexture,
+				app.screen.width, // Full screen width
+				tileSize // Fixed height for the carpet
+			);
+			strip.tileScale.set(0.1); // Adjust the scale to show the full carpet
+			strip.anchor.set(0.5);
+			strip.x = app.screen.width / 2;
+			strip.y = app.screen.height / 2 + yOffset;
+			return strip;
+		};
+
+		// Function to create a vertical strip
+		const createVerticalStrip = (xOffset) => {
+			const strip = new PIXI.TilingSprite(
+				carpetTexture,
+				tileSize, // Fixed width for the carpet
+				app.screen.height // Full screen height
+			);
+			strip.tileScale.set(0.1); // Adjust the scale to show the full carpet
+			strip.anchor.set(0.5);
+			strip.x = app.screen.width / 2 + xOffset;
+			strip.y = app.screen.height / 2;
+			return strip;
+		};
+
+		// Create and add horizontal strips
+		const horizontalStrips = [
+			createHorizontalStrip(-tileSize),
+			createHorizontalStrip(0),
+			createHorizontalStrip(tileSize),
+		];
+		horizontalStrips.forEach((strip) => app.stage.addChild(strip));
+
+		// Create and add vertical strips
+		const verticalStrips = [
+			createVerticalStrip(-tileSize),
+			createVerticalStrip(0),
+			createVerticalStrip(tileSize),
+		];
+		verticalStrips.forEach((strip) => app.stage.addChild(strip));
+
+		// Resize handler to adjust the tiling background and carpet on window resize
 		const resizeHandler = () => {
 			app.renderer.resize(window.innerWidth, window.innerHeight);
+
+			// Resize the floor background
 			background.width = app.screen.width;
 			background.height = app.screen.height;
+
+			// Resize and reposition the carpet strips
+			horizontalStrips.forEach((strip, index) => {
+				strip.width = app.screen.width; // Full screen width
+				strip.x = app.screen.width / 2;
+				strip.y = app.screen.height / 2 + (index - 1) * tileSize;
+			});
+
+			verticalStrips.forEach((strip, index) => {
+				strip.height = app.screen.height; // Full screen height
+				strip.x = app.screen.width / 2 + (index - 1) * tileSize;
+				strip.y = app.screen.height / 2;
+			});
 		};
 		window.addEventListener("resize", resizeHandler);
-
 		// Create the bookshelf
 		const bookshelf1 = PIXI.Sprite.from(bookshelfImage);
 		bookshelf1.anchor.set(0.5); // Center anchor for better positioning
@@ -251,7 +314,6 @@ const PixiCanvas = () => {
 		app.stage.addChild(rug);
 
 		// Create local player sprite
-
 		const localSprite = PIXI.Sprite.from(
 			"https://pixijs.io/examples/examples/assets/bunny.png"
 		);
