@@ -21,7 +21,6 @@ import rugImage from "./assets/rug.png"; // Table image
 import tablev3Image from "./assets/table_v3.png"; // Table image
 import tablev4Image from "./assets/table_v4.png"; // Table image
 
-
 // Remove PeerJS import
 // import Peer from "peerjs"; // Remove this line
 import flooringImage from "./assets/floor2.png";
@@ -31,7 +30,6 @@ import bookshelfv3Image from "./assets/bookshelf_v3.png";
 import bookshelfv4Image from "./assets/bookshelf_v4.png";
 import carpetImage from "./assets/carpet.png";
 import pianoImage from "./assets/piano.png";
-
 
 const PixiCanvas = () => {
 	const pixiContainer = useRef(null);
@@ -154,7 +152,7 @@ const PixiCanvas = () => {
 		pool.anchor.set(0.5); // Center anchor for better positioning
 		pool.width = 201;
 		pool.height = 132;
-		pool.x = app.screen.width * 0.80; // Relative position: 20% from the left
+		pool.x = app.screen.width * 0.8; // Relative position: 20% from the left
 		pool.y = app.screen.height * 0.117; // Relative position: 40% from the top
 		app.stage.addChild(pool);
 
@@ -162,7 +160,7 @@ const PixiCanvas = () => {
 		arcade.anchor.set(0.5); // Center anchor for better positioning
 		arcade.width = 400;
 		arcade.height = 400;
-		arcade.x = app.screen.width * 0.70; // Relative position: 20% from the left
+		arcade.x = app.screen.width * 0.7; // Relative position: 20% from the left
 		arcade.y = app.screen.height * 0.117; // Relative position: 40% from the top
 		app.stage.addChild(arcade);
 
@@ -171,7 +169,7 @@ const PixiCanvas = () => {
 		clock.width = 36.3;
 		clock.height = 134.31;
 		clock.x = app.screen.width * 0.18; // Relative position: 20% from the left
-		clock.y = app.screen.height * 0.10; // Relative position: 40% from the top
+		clock.y = app.screen.height * 0.1; // Relative position: 40% from the top
 		app.stage.addChild(clock);
 
 		const desk = PIXI.Sprite.from(deskImage);
@@ -182,8 +180,6 @@ const PixiCanvas = () => {
 		desk.y = app.screen.height * 0.817; // Relative position: 40% from the top
 		app.stage.addChild(desk);
 
-
-
 		const deskv2 = PIXI.Sprite.from(deskv2Image);
 		deskv2.anchor.set(0.5); // Center anchor for better positioning
 		deskv2.width = 512;
@@ -191,7 +187,6 @@ const PixiCanvas = () => {
 		deskv2.x = app.screen.width * 0.2; // Relative position: 20% from the left
 		deskv2.y = app.screen.height * 0.835; // Relative position: 40% from the top
 		app.stage.addChild(deskv2);
-
 
 		const deskv3 = PIXI.Sprite.from(deskv3Image);
 		deskv3.anchor.set(0.5); // Center anchor for better positioning
@@ -201,7 +196,6 @@ const PixiCanvas = () => {
 		deskv3.y = app.screen.height * 0.94; // Relative position: 40% from the top
 		app.stage.addChild(deskv3);
 
-
 		const deskv4 = PIXI.Sprite.from(deskImage);
 		deskv4.anchor.set(0.5); // Center anchor for better positioning
 		deskv4.width = 512;
@@ -210,8 +204,6 @@ const PixiCanvas = () => {
 		deskv4.y = app.screen.height * 0.817; // Relative position: 40% from the top
 		app.stage.addChild(deskv4);
 
-
-
 		const deskv5 = PIXI.Sprite.from(deskv2Image);
 		deskv5.anchor.set(0.5); // Center anchor for better positioning
 		deskv5.width = 512;
@@ -219,7 +211,6 @@ const PixiCanvas = () => {
 		deskv5.x = app.screen.width * 0.34; // Relative position: 20% from the left
 		deskv5.y = app.screen.height * 0.835; // Relative position: 40% from the top
 		app.stage.addChild(deskv5);
-
 
 		const deskv6 = PIXI.Sprite.from(deskv3Image);
 		deskv6.anchor.set(0.5); // Center anchor for better positioning
@@ -245,7 +236,6 @@ const PixiCanvas = () => {
 		table2.y = app.screen.height * 0.1; // Relative position: 40% from the top
 		app.stage.addChild(table2);
 
-
 		const table3 = PIXI.Sprite.from(tablev3Image);
 		table3.anchor.set(0.5); // Center anchor for better positioning
 		table3.width = 512;
@@ -253,8 +243,6 @@ const PixiCanvas = () => {
 		table3.x = app.screen.width * 0.1; // Relative position: 20% from the left
 		table3.y = app.screen.height * 0.35; // Relative position: 40% from the top
 		app.stage.addChild(table3);
-		
-
 
 		const table4 = PIXI.Sprite.from(tablev4Image);
 		table4.anchor.set(0.5); // Center anchor for better positioning
@@ -264,8 +252,6 @@ const PixiCanvas = () => {
 		table4.y = app.screen.height * 0.35; // Relative position: 40% from the top
 		app.stage.addChild(table4);
 
-
-
 		const rug = PIXI.Sprite.from(rugImage);
 		rug.anchor.set(0.5); // Center anchor for better positioning
 		rug.width = 98;
@@ -273,7 +259,6 @@ const PixiCanvas = () => {
 		rug.x = app.screen.width * 0.35; // Relative position: 20% from the left
 		rug.y = app.screen.height * 0.35; // Relative position: 40% from the top
 		app.stage.addChild(rug);
-	
 
 		// Create local player sprite
 
