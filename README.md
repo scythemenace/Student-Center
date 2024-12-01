@@ -10,6 +10,12 @@
 
 ---
 
+## **Inspiration**
+
+The inspiration for this project stems from the need to bridge the gap in accessibility for students and employees in hybrid environments. Whether it’s a student unable to attend campus activities or an employee struggling to feel connected in a hybrid work model, existing virtual solutions often fail to deliver the interactivity and inclusivity needed for meaningful engagement. Our goal is to create a platform that eliminates these barriers and fosters collaboration and connection for everyone.
+
+---
+
 ## **Introduction**
 
 Viniculum is a **real-time collaborative environment** built using modern web technologies. It supports multiple users interacting within a shared virtual space. Users can:
