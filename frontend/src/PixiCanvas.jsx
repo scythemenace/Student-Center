@@ -36,11 +36,15 @@ const PixiCanvas = () => {
 		const initPeer = (id) => {
 			console.log("Initializing PeerJS with ID:", id);
 			const newPeer = new Peer(id, {
-				host: "student-center-ba.onrender.com",
+				host: "peerjs.com", // Use the public PeerJS server
 				port: 443,
-				path: "/peerjs", // Correct path
-				secure: true, // Ensure HTTPS
-				debug: 3, // Verbose logging
+				path: "/",
+				secure: true,
+				debug: 3,
+			});
+
+			newPeer.on("open", () => {
+				console.log("Peer connection open with ID:", newPeer.id);
 			});
 
 			newPeer.on("open", () => {
