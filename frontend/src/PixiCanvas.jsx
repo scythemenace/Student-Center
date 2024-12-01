@@ -33,27 +33,33 @@ const PixiCanvas = () => {
 		});
 		setSocket(newSocket);
 
+		// PixiCanvas.js
+
 		const initPeer = (id) => {
 			console.log("Initializing PeerJS with ID:", id);
 
-			const newPeer = new Peer({
-				id: id,
-				host: "peerjs.com", // Use a reliable public PeerJS server
-				port: 443,
-				path: "/",
-				secure: true,
+			const newPeer = new Peer(id, {
+				host: "your-backend-domain.com", // Replace with your backend's domain or IP
+				port: 443, // Use 443 for HTTPS or the port your backend is running on
+				path: "/peerjs",
+				secure: true, // Set to true if using HTTPS
 				debug: 2, // Reduced debug level for cleaner logs
+				config: {
+					iceServers: [
+						{ urls: "stun:stun.l.google.com:19302" },
+						// Add TURN servers here if needed
+					],
+				},
 			});
 
 			newPeer.on("open", (peerId) => {
 				console.log("Peer connection open with ID:", peerId);
+				setPeer(newPeer);
 			});
 
 			newPeer.on("error", (err) => {
 				console.error("PeerJS error:", err);
 			});
-
-			setPeer(newPeer);
 
 			// Handle incoming calls
 			newPeer.on("call", handleIncomingCall);
