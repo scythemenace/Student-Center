@@ -21,6 +21,49 @@ import tablev2Image from "./assets/table_2.png"; // Table image
 import rugImage from "./assets/rug.png"; // Table image
 import tablev3Image from "./assets/table_v3.png"; // Table image
 import tablev4Image from "./assets/table_v4.png"; // Table image
+import character1Walking from "./assets/girlelfwalk.png";
+import character2Walking from "./assets/redsantawalk.png";
+import character3Walking from "./assets/greenelfwalk.png";
+import character4Walking from "./assets/bluesantawalk.png";
+
+
+// Add character pool
+const characterPool = [
+    character1Walking,
+    character2Walking,
+    character3Walking,
+    character4Walking,
+];
+
+// Function to create a player sprite with random character and walking animation
+const createPlayerSprite = (app, x, y) => {
+    // Pick a random character from the pool
+    const randomCharacter =
+        characterPool[Math.floor(Math.random() * characterPool.length)];
+    const textureArray = [];
+
+    // Load frames for animation
+    for (let i = 0; i < randomCharacter.frames.length; i++) {
+        textureArray.push(PIXI.Texture.from(randomCharacter.frames[i]));
+    }
+
+    // Create animated sprite
+    const sprite = new PIXI.AnimatedSprite(textureArray);
+    sprite.anchor.set(0.5);
+    sprite.width = 40;
+    sprite.height = 60;
+    sprite.x = x;
+    sprite.y = y;
+
+    // Play walking animation
+    sprite.animationSpeed = 0.1;
+    sprite.play();
+
+    // Add the sprite to the stage
+    app.stage.addChild(sprite);
+
+    return sprite;
+};
 
 const PixiCanvas = () => {
 	const pixiContainer = useRef(null);
@@ -47,6 +90,21 @@ const PixiCanvas = () => {
 			transports: ["websocket"],
 		});
 		setSocket(newSocket);
+
+		newSocket.on("userMoved", (data) => {
+			if (data.userId !== newSocket.id) {
+				let otherSprite = userSprites.current[data.userId];
+				if (!otherSprite) {
+					otherSprite = createPlayerSprite(app, data.x, data.y);
+					userSprites.current[data.userId] = otherSprite;
+		
+					// Initiate WebRTC connection
+					initiateConnection(data.userId);
+				}
+				otherSprite.x = data.x;
+				otherSprite.y = data.y;
+			}
+		});
 
 		// Get user media
 		const getUserMedia = async () => {
@@ -456,11 +514,32 @@ const PixiCanvas = () => {
 		const speed = tileSize;
 
 		const moveLocalPlayer = () => {
-			if (movement.left) localSprite.x -= speed;
-			if (movement.right) localSprite.x += speed;
-			if (movement.up) localSprite.y -= speed;
-			if (movement.down) localSprite.y += speed;
-
+			let isMoving = false;
+		
+			if (movement.left) {
+				localSprite.x -= speed;
+				isMoving = true;
+			}
+			if (movement.right) {
+				localSprite.x += speed;
+				isMoving = true;
+			}
+			if (movement.up) {
+				localSprite.y -= speed;
+				isMoving = true;
+			}
+			if (movement.down) {
+				localSprite.y += speed;
+				isMoving = true;
+			}
+		
+			// Update animation state
+			if (isMoving) {
+				if (!localSprite.playing) localSprite.play();
+			} else {
+				if (localSprite.playing) localSprite.stop();
+			}
+		
 			// Keep localSprite within bounds
 			localSprite.x = Math.max(
 				0,
@@ -470,10 +549,11 @@ const PixiCanvas = () => {
 				0,
 				Math.min(app.screen.height - tileSize, localSprite.y)
 			);
-
+		
 			// Notify the server of the local player's movement
 			newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
 		};
+		
 
 		// Event listeners for movement
 		const handleKeyDown = (event) => {
