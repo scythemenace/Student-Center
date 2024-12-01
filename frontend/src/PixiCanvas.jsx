@@ -21,16 +21,6 @@ import rugImage from "./assets/rug.png"; // Table image
 import tablev3Image from "./assets/table_v3.png"; // Table image
 import tablev4Image from "./assets/table_v4.png"; // Table image
 
-// Remove PeerJS import
-// import Peer from "peerjs"; // Remove this line
-import flooringImage from "./assets/floor2.png";
-import bookshelfImage from "./assets/bookshelf.png";
-import bookshelfv2Image from "./assets/bookshelf_v2.png";
-import bookshelfv3Image from "./assets/bookshelf_v3.png";
-import bookshelfv4Image from "./assets/bookshelf_v4.png";
-import carpetImage from "./assets/carpet.png";
-import pianoImage from "./assets/piano.png";
-
 const PixiCanvas = () => {
 	const pixiContainer = useRef(null);
 	const [socket, setSocket] = useState(null);
