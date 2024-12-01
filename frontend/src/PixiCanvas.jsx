@@ -1,5 +1,3 @@
-// PixiCanvas.jsx
-
 import React, { useRef, useEffect, useState } from "react";
 import * as PIXI from "pixi.js";
 import { io } from "socket.io-client";
@@ -11,7 +9,6 @@ import bookshelfv3Image from "./assets/bookshelf_v3.png";
 import bookshelfv4Image from "./assets/bookshelf_v4.png";
 import carpetImage from "./assets/carpet.png";
 import pianoImage from "./assets/piano.png";
-import poolImage from "./assets/pool.png";
 
 const PixiCanvas = () => {
 	const pixiContainer = useRef(null);
@@ -31,7 +28,6 @@ const PixiCanvas = () => {
 	const SOUND_NEAR_RANGE = 50; // Distance for maximum volume
 
 	useEffect(() => {
-		// Update the socket URL to your deployed server
 		const newSocket = io("https://student-center-ba.onrender.com", {
 			transports: ["websocket"], // Use WebSocket transport
 		});
@@ -43,6 +39,7 @@ const PixiCanvas = () => {
 				host: "student-center-ba.onrender.com",
 				port: 443,
 				path: "/peerjs",
+				key: "", // Prevent duplicate '/peerjs' in the URL
 				secure: true,
 				debug: 3, // Verbose logging
 			});
@@ -117,7 +114,7 @@ const PixiCanvas = () => {
 			pixiContainer.current.appendChild(app.view);
 		}
 
-		// Create the tiling background
+		// Add background
 		const tileTexture = PIXI.Texture.from(flooringImage);
 		const background = new PIXI.TilingSprite(
 			tileTexture,
@@ -126,80 +123,15 @@ const PixiCanvas = () => {
 		);
 		app.stage.addChild(background);
 
-		// Carpet textures for the plus sign
-		const carpetTexture = PIXI.Texture.from(carpetImage);
-
-		// Function to create a horizontal strip
-		const createHorizontalStrip = (yOffset) => {
-			const strip = new PIXI.TilingSprite(
-				carpetTexture,
-				app.screen.width,
-				tileSize
-			);
-			strip.tileScale.set(0.1);
-			strip.anchor.set(0.5);
-			strip.x = app.screen.width / 2;
-			strip.y = app.screen.height / 2 + yOffset;
-			return strip;
-		};
-
-		// Function to create a vertical strip
-		const createVerticalStrip = (xOffset) => {
-			const strip = new PIXI.TilingSprite(
-				carpetTexture,
-				tileSize,
-				app.screen.height
-			);
-			strip.tileScale.set(0.1);
-			strip.anchor.set(0.5);
-			strip.x = app.screen.width / 2 + xOffset;
-			strip.y = app.screen.height / 2;
-			return strip;
-		};
-
-		// Create and add horizontal strips
-		const horizontalStrips = [
-			createHorizontalStrip(-tileSize),
-			createHorizontalStrip(0),
-			createHorizontalStrip(tileSize),
-		];
-		horizontalStrips.forEach((strip) => app.stage.addChild(strip));
-
-		// Create and add vertical strips
-		const verticalStrips = [
-			createVerticalStrip(-tileSize),
-			createVerticalStrip(0),
-			createVerticalStrip(tileSize),
-		];
-		verticalStrips.forEach((strip) => app.stage.addChild(strip));
-
 		// Resize handler
 		const resizeHandler = () => {
 			app.renderer.resize(window.innerWidth, window.innerHeight);
-
-			// Resize the floor background
 			background.width = app.screen.width;
 			background.height = app.screen.height;
-
-			// Resize and reposition the carpet strips
-			horizontalStrips.forEach((strip, index) => {
-				strip.width = app.screen.width;
-				strip.x = app.screen.width / 2;
-				strip.y = app.screen.height / 2 + (index - 1) * tileSize;
-			});
-
-			verticalStrips.forEach((strip, index) => {
-				strip.height = app.screen.height;
-				strip.x = app.screen.width / 2 + (index - 1) * tileSize;
-				strip.y = app.screen.height / 2;
-			});
 		};
 		window.addEventListener("resize", resizeHandler);
 
-		// Add static sprites (bookshelves, piano, etc.)
-		// ... (Your existing code to add static sprites)
-
-		// Create the local player sprite
+		// Create local player sprite
 		const localSprite = PIXI.Sprite.from(
 			"https://pixijs.io/examples/examples/assets/bunny.png"
 		);
@@ -209,27 +141,20 @@ const PixiCanvas = () => {
 		localSprite.x = Math.floor(app.screen.width / 2 / tileSize) * tileSize;
 		localSprite.y = Math.floor(app.screen.height / 2 / tileSize) * tileSize;
 		app.stage.addChild(localSprite);
-
-		// Store reference to local sprite
 		localSpriteRef.current = localSprite;
 		myPos.current = { x: localSprite.x, y: localSprite.y };
 
-		// Initialize peer after socket connects
 		newSocket.on("connect", () => {
 			console.log("Socket.IO connected with ID:", newSocket.id);
 			initPeer(newSocket.id);
-
-			// Notify the server about the new player
 			newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
 		});
 
-		// Handle other players' movements and connections
 		newSocket.on("userMoved", (data) => {
 			console.log("User moved:", data.userId);
 			if (data.userId !== newSocket.id) {
 				let otherSprite = userSprites.current[data.userId];
 				if (!otherSprite) {
-					// Create a sprite for the new player
 					otherSprite = PIXI.Sprite.from(
 						"https://pixijs.io/examples/examples/assets/bunny.png"
 					);
@@ -239,10 +164,18 @@ const PixiCanvas = () => {
 					app.stage.addChild(otherSprite);
 					userSprites.current[data.userId] = otherSprite;
 
-					// Start a call with the new user
-					startCall(data.userId);
+					if (peer && peer.open) {
+						startCall(data.userId);
+					} else {
+						console.warn(
+							"PeerJS not initialized yet, delaying call to",
+							data.userId
+						);
+						peer?.on("open", () => {
+							startCall(data.userId);
+						});
+					}
 				}
-				// Update the position of the other player
 				otherSprite.x = data.x;
 				otherSprite.y = data.y;
 			}
@@ -256,7 +189,6 @@ const PixiCanvas = () => {
 				delete userSprites.current[userId];
 			}
 			if (userStreams.current[userId]) {
-				// Stop and remove audio stream
 				userStreams.current[userId].audio.pause();
 				userStreams.current[userId].audio.srcObject = null;
 				delete userStreams.current[userId];
@@ -293,128 +225,17 @@ const PixiCanvas = () => {
 			}
 		};
 
-		// Movement state
-		const movement = { left: false, right: false, up: false, down: false };
-		const speed = tileSize;
-
-		const moveLocalPlayer = () => {
-			if (movement.left) localSprite.x -= speed;
-			if (movement.right) localSprite.x += speed;
-			if (movement.up) localSprite.y -= speed;
-			if (movement.down) localSprite.y += speed;
-
-			// Keep localSprite within bounds
-			localSprite.x = Math.max(
-				0,
-				Math.min(app.screen.width - tileSize, localSprite.x)
-			);
-			localSprite.y = Math.max(
-				0,
-				Math.min(app.screen.height - tileSize, localSprite.y)
-			);
-
-			// Update positions
-			myPos.current = { x: localSprite.x, y: localSprite.y };
-
-			// Notify the server of the local player's movement
-			newSocket.emit("move", { x: localSprite.x, y: localSprite.y });
-
-			// Update audio volumes based on proximity
-			updateAudioVolumes();
-		};
-
-		const updateAudioVolumes = () => {
-			Object.keys(userSprites.current).forEach((userId) => {
-				if (userId === newSocket.id) return;
-				const otherSprite = userSprites.current[userId];
-				const distance = Math.hypot(
-					localSprite.x - otherSprite.x,
-					localSprite.y - otherSprite.y
-				);
-
-				let volume = 0;
-				if (distance < SOUND_NEAR_RANGE) {
-					volume = 1;
-				} else if (distance < SOUND_CUTOFF_RANGE) {
-					volume =
-						1 -
-						(distance - SOUND_NEAR_RANGE) /
-							(SOUND_CUTOFF_RANGE - SOUND_NEAR_RANGE);
-				}
-
-				if (userStreams.current[userId]) {
-					userStreams.current[userId].audio.volume = volume;
-				}
-			});
-		};
-
-		// Event listeners for movement
-		const handleKeyDown = (event) => {
-			switch (event.code) {
-				case "ArrowLeft":
-				case "KeyA":
-					movement.left = true;
-					break;
-				case "ArrowRight":
-				case "KeyD":
-					movement.right = true;
-					break;
-				case "ArrowUp":
-				case "KeyW":
-					movement.up = true;
-					break;
-				case "ArrowDown":
-				case "KeyS":
-					movement.down = true;
-					break;
-				default:
-					break;
-			}
-			moveLocalPlayer();
-		};
-
-		const handleKeyUp = (event) => {
-			switch (event.code) {
-				case "ArrowLeft":
-				case "KeyA":
-					movement.left = false;
-					break;
-				case "ArrowRight":
-				case "KeyD":
-					movement.right = false;
-					break;
-				case "ArrowUp":
-				case "KeyW":
-					movement.up = false;
-					break;
-				case "ArrowDown":
-				case "KeyS":
-					movement.down = false;
-					break;
-				default:
-					break;
-			}
-		};
-
-		// Attach event listeners
-		window.addEventListener("keydown", handleKeyDown);
-		window.addEventListener("keyup", handleKeyUp);
-
 		// Cleanup
 		return () => {
 			newSocket.close();
-			if (peer) peer.destroy();
+			peer?.destroy();
 			app.destroy(true, true);
-			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("keyup", handleKeyUp);
 			window.removeEventListener("resize", resizeHandler);
 
-			// Stop all audio streams
 			Object.values(userStreams.current).forEach((userStream) => {
 				userStream.audio.pause();
 				userStream.audio.srcObject = null;
 			});
-			userStreams.current = {};
 		};
 	}, []);
 
