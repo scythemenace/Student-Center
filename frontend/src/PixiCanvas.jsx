@@ -48,8 +48,8 @@ const PixiCanvas = () => {
 
 	useEffect(() => {
 		const backendUrl =
-			process.env.VITE_APP_BACKEND_URL ||
-			"http://localhost:3000";
+			process.env.REACT_APP_BACKEND_URL ||
+			"https://student-center-ba.onrender.com/";
 
 		const newSocket = io(backendUrl, {
 			transports: ["websocket"],
