@@ -29,10 +29,6 @@ import plant2Image from "./assets/plant_2.png"; // Plant image
 import rug2Image from "./assets/rug_2.png"; // Plant image
 import chessImage from "./assets/chess.png"; // Chess image
 import christmasImage from "./assets/christmas.png"; // Christmas image
-import character1Image from "./assets/redsanta.png"; // Character 1
-import character2Image from "./assets/bluesanta.png"; // Character 2
-import character3Image from "./assets/greenelf.png"; // Character 3
-import character4Image from "./assets/girlelf.png"; // Character 4
 
 const PixiCanvas = () => {
 	const pixiContainer = useRef(null);
