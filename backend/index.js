@@ -9,7 +9,7 @@ require("dotenv").config();
 // Use CORS
 app.use(
 	cors({
-		origin: process.env.FRONTEND_URL || "https://your-frontend-domain.com/",
+		origin: process.env.FRONTEND_URL || "https://localhost:5173/",
 		methods: ["GET", "POST", "PUT", "DELETE"],
 		allowedHeaders: ["Content-Type", "Authorization"],
 	})
