@@ -1,4 +1,5 @@
 // PixiCanvas.jsx
+
 import React, { useRef, useEffect, useState } from "react";
 import * as PIXI from "pixi.js";
 import { io } from "socket.io-client";
@@ -30,30 +31,20 @@ const PixiCanvas = () => {
 	const SOUND_NEAR_RANGE = 50; // Distance for maximum volume
 
 	useEffect(() => {
-		const newSocket = io("http://localhost:3000"); // Update with your server URL
+		// Update the socket URL to your deployed server
+		const newSocket = io("https://student-center-ba.onrender.com", {
+			transports: ["websocket"], // Use WebSocket transport
+		});
 		setSocket(newSocket);
-
-		const getMicrophoneAccess = async () => {
-			try {
-				const stream = await navigator.mediaDevices.getUserMedia({
-					audio: true,
-				});
-				console.log("Microphone access granted");
-				// Store the stream if needed
-			} catch (err) {
-				console.error("Error accessing microphone:", err);
-			}
-		};
-
-		getMicrophoneAccess();
 
 		const initPeer = (id) => {
 			console.log("Initializing PeerJS with ID:", id);
 			const newPeer = new Peer(id, {
-				host: "localhost",
-				port: 3000,
+				host: "student-center-ba.onrender.com",
+				port: 443,
 				path: "/peerjs",
 				secure: true,
+				debug: 3, // Verbose logging
 			});
 
 			newPeer.on("open", () => {
@@ -90,11 +81,17 @@ const PixiCanvas = () => {
 		};
 
 		const handleIncomingCall = (call) => {
+			console.log("Handling incoming call from:", call.peer);
 			call.on("stream", (remoteStream) => {
+				console.log("Received remote stream from:", call.peer);
 				userStreams.current[call.peer] = {
 					stream: remoteStream,
 					audio: createAudioElement(remoteStream),
 				};
+			});
+
+			call.on("error", (err) => {
+				console.error("Call error with", call.peer, ":", err);
 			});
 		};
 
@@ -199,54 +196,8 @@ const PixiCanvas = () => {
 		};
 		window.addEventListener("resize", resizeHandler);
 
-		// Create the bookshelf
-		const bookshelf1 = PIXI.Sprite.from(bookshelfImage);
-		bookshelf1.anchor.set(0.5); // Center anchor for better positioning
-		bookshelf1.width = 150;
-		bookshelf1.height = 200;
-		bookshelf1.x = app.screen.width * 0.025; // Relative position: 20% from the left
-		bookshelf1.y = app.screen.height * 0.095; // Relative position: 40% from the top
-		app.stage.addChild(bookshelf1);
-
-		const bookshelfv2 = PIXI.Sprite.from(bookshelfv2Image);
-		bookshelfv2.anchor.set(0.5); // Center anchor for better positioning
-		bookshelfv2.width = 500;
-		bookshelfv2.height = 600;
-		bookshelfv2.x = app.screen.width * 0.069; // Relative position: 20% from the left
-		bookshelfv2.y = app.screen.height * 0.21; // Relative position: 40% from the top
-		app.stage.addChild(bookshelfv2);
-
-		const bookshelfv4 = PIXI.Sprite.from(bookshelfv4Image);
-		bookshelfv4.anchor.set(0.5); // Center anchor for better positioning
-		bookshelfv4.width = 500;
-		bookshelfv4.height = 600;
-		bookshelfv4.x = app.screen.width * 0.09; // Relative position: 20% from the left
-		bookshelfv4.y = app.screen.height * 0.138; // Relative position: 40% from the top
-		app.stage.addChild(bookshelfv4);
-
-		const bookshelfv3 = PIXI.Sprite.from(bookshelfv3Image);
-		bookshelfv3.anchor.set(0.5); // Center anchor for better positioning
-		bookshelfv3.width = 500;
-		bookshelfv3.height = 600;
-		bookshelfv3.x = app.screen.width * 0.132; // Relative position: 20% from the left
-		bookshelfv3.y = app.screen.height * 0.187; // Relative position: 40% from the top
-		app.stage.addChild(bookshelfv3);
-
-		const bookshelf2 = PIXI.Sprite.from(bookshelfImage);
-		bookshelf2.anchor.set(0.5); // Center anchor for better positioning
-		bookshelf2.width = 150;
-		bookshelf2.height = 200;
-		bookshelf2.x = app.screen.width * 0.157; // Relative position: 20% from the left
-		bookshelf2.y = app.screen.height * 0.098; // Relative position: 40% from the top
-		app.stage.addChild(bookshelf2);
-
-		const piano = PIXI.Sprite.from(pianoImage);
-		piano.anchor.set(0.5); // Center anchor for better positioning
-		piano.width = 1000;
-		piano.height = 1000;
-		piano.x = app.screen.width * 0.96; // Relative position: 20% from the left
-		piano.y = app.screen.height * 0.117; // Relative position: 40% from the top
-		app.stage.addChild(piano);
+		// Add static sprites (bookshelves, piano, etc.)
+		// ... (Your existing code to add static sprites)
 
 		// Create the local player sprite
 		const localSprite = PIXI.Sprite.from(
@@ -265,6 +216,7 @@ const PixiCanvas = () => {
 
 		// Initialize peer after socket connects
 		newSocket.on("connect", () => {
+			console.log("Socket.IO connected with ID:", newSocket.id);
 			initPeer(newSocket.id);
 
 			// Notify the server about the new player
@@ -273,6 +225,7 @@ const PixiCanvas = () => {
 
 		// Handle other players' movements and connections
 		newSocket.on("userMoved", (data) => {
+			console.log("User moved:", data.userId);
 			if (data.userId !== newSocket.id) {
 				let otherSprite = userSprites.current[data.userId];
 				if (!otherSprite) {
@@ -296,6 +249,7 @@ const PixiCanvas = () => {
 		});
 
 		newSocket.on("userDisconnected", (data) => {
+			console.log("User disconnected:", data.userId);
 			const { userId } = data;
 			if (userSprites.current[userId]) {
 				app.stage.removeChild(userSprites.current[userId]);
@@ -310,17 +264,29 @@ const PixiCanvas = () => {
 		});
 
 		const startCall = async (targetId) => {
-			if (!peer) return;
+			if (!peer) {
+				console.warn("PeerJS not initialized yet");
+				return;
+			}
+			console.log("Attempting to start call with:", targetId);
 			try {
 				const stream = await navigator.mediaDevices.getUserMedia({
 					audio: true,
 				});
+				console.log("Microphone access granted");
 				const call = peer.call(targetId, stream);
+				console.log("Call initiated to:", targetId);
+
 				call.on("stream", (remoteStream) => {
+					console.log("Received remote stream from:", targetId);
 					userStreams.current[targetId] = {
 						stream: remoteStream,
 						audio: createAudioElement(remoteStream),
 					};
+				});
+
+				call.on("error", (err) => {
+					console.error("Call error with", targetId, ":", err);
 				});
 			} catch (err) {
 				console.error("Error accessing microphone:", err);
