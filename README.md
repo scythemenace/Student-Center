@@ -7,7 +7,6 @@
 4. [File Structure](#file-structure)
 5. [Setup and Installation](#setup-and-installation)
 6. [Future Considerations](#future-considerations)
-7. [License](#license)
 
 ---
 
