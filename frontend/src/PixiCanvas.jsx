@@ -30,7 +30,8 @@ const PixiCanvas = () => {
 	useEffect(() => {
 		const backendUrl =
 			process.env.REACT_APP_BACKEND_URL ||
-			"https://student-center-129q.onrender.com";
+			"https://student-center-ba.onrender.com";
+
 		const newSocket = io(backendUrl, {
 			transports: ["websocket"],
 		});
@@ -105,39 +106,18 @@ const PixiCanvas = () => {
 				peerConnections.current[from] = pc;
 			}
 
-			const isPolite = pc.isPolite;
-
-			try {
-				if (signalData.type === "offer") {
-					const offerCollision =
-						pc.makingOffer || pc.signalingState !== "stable";
-
-					const ignoreOffer = !isPolite && offerCollision;
-					if (ignoreOffer) {
-						console.log("Ignoring offer from", from);
-						return;
-					}
-
-					await pc.setRemoteDescription(new RTCSessionDescription(signalData));
-					const answer = await pc.createAnswer();
-					await pc.setLocalDescription(answer);
-					newSocket.emit("signal", {
-						to: from,
-						signalData: pc.localDescription,
-					});
-				} else if (signalData.type === "answer") {
-					await pc.setRemoteDescription(new RTCSessionDescription(signalData));
-				} else if (signalData.candidate) {
-					try {
-						await pc.addIceCandidate(new RTCIceCandidate(signalData));
-					} catch (err) {
-						if (!pc.ignoreOffer) {
-							console.error("Error adding received ice candidate", err);
-						}
-					}
-				}
-			} catch (err) {
-				console.error("Error handling signal", err);
+			if (signalData.type === "offer") {
+				await pc.setRemoteDescription(new RTCSessionDescription(signalData));
+				const answer = await pc.createAnswer();
+				await pc.setLocalDescription(answer);
+				newSocket.emit("signal", {
+					to: from,
+					signalData: pc.localDescription,
+				});
+			} else if (signalData.type === "answer") {
+				await pc.setRemoteDescription(new RTCSessionDescription(signalData));
+			} else if (signalData.candidate) {
+				await pc.addIceCandidate(new RTCIceCandidate(signalData));
 			}
 		});
 
@@ -184,13 +164,6 @@ const PixiCanvas = () => {
 				iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 			});
 
-			// Determine isPolite based on socket IDs
-			pc.isPolite = newSocket.id > targetId;
-
-			pc.makingOffer = false;
-			pc.ignoreOffer = false;
-			pc.isSettingRemoteAnswerPending = false;
-
 			// Add local stream tracks
 			localStreamRef.current?.getTracks().forEach((track) => {
 				pc.addTrack(track, localStreamRef.current);
@@ -217,32 +190,19 @@ const PixiCanvas = () => {
 				}
 			};
 
-			// Handle negotiation needed
-			pc.onnegotiationneeded = async () => {
-				try {
-					pc.makingOffer = true;
-					const offer = await pc.createOffer();
-					if (pc.signalingState !== "stable") return;
-					await pc.setLocalDescription(offer);
-					newSocket.emit("signal", {
-						to: targetId,
-						signalData: pc.localDescription,
-					});
-				} catch (err) {
-					console.error("Error during negotiation", err);
-				} finally {
-					pc.makingOffer = false;
-				}
-			};
-
 			return pc;
 		};
 
-		const initiateConnection = (targetId) => {
-			if (!peerConnections.current[targetId]) {
-				const pc = createPeerConnection(targetId);
-				peerConnections.current[targetId] = pc;
-			}
+		const initiateConnection = async (targetId) => {
+			const pc = createPeerConnection(targetId);
+			peerConnections.current[targetId] = pc;
+
+			const offer = await pc.createOffer();
+			await pc.setLocalDescription(offer);
+			newSocket.emit("signal", {
+				to: targetId,
+				signalData: pc.localDescription,
+			});
 		};
 
 		const createAudioElement = (stream) => {
