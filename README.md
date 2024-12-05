@@ -1,12 +1,15 @@
 # **Vinculum**
 
 ## **Table of Contents**
+
 1. [Introduction](#introduction)
 2. [Features](#features)
 3. [Technologies Used](#technologies-used)
 4. [File Structure](#file-structure)
 5. [Setup and Installation](#setup-and-installation)
 6. [Future Considerations](#future-considerations)
+
+![Multi-user Screen](mult-user-screen.png)
 
 ---
 
@@ -30,7 +33,8 @@ This application is designed to enhance virtual collaboration and engagement by 
 
 ## **Features**
 
-- **Real-Time Movement Synchronization**: 
+- **Real-Time Movement Synchronization**:
+
   - All users can see each other’s movement in real time.
   - Movement data is handled using **WebSockets** for low-latency updates.
 
@@ -43,11 +47,13 @@ This application is designed to enhance virtual collaboration and engagement by 
 ## **Technologies Used**
 
 - **Frontend**:
+
   - **Vite**: A fast build tool and development server.
   - **React**: A JavaScript library for building interactive user interfaces.
   - **Pixi.js**: For rendering the 2D virtual environment.
 
 - **Backend**:
+
   - **Node.js**: A runtime for building fast and scalable server-side applications.
   - **Express**: A web framework for handling routes and APIs.
   - **Socket.IO**: For real-time bidirectional communication.
@@ -93,6 +99,7 @@ root/
 Follow these steps to set up and run the project locally:
 
 ### **1. Prerequisites**
+
 - **Node.js**: Install [Node.js](https://nodejs.org/) (v16 or higher).
 - **npm or yarn**: Package manager for installing dependencies.
 
@@ -106,12 +113,14 @@ cd your-repository
 ### **3. Install Dependencies**
 
 #### Backend
+
 ```bash
 cd backend
 npm install
 ```
 
 #### Frontend
+
 ```bash
 cd ../frontend
 npm install
@@ -146,15 +155,19 @@ npm install
 This project is a foundation for building a robust real-time collaborative platform. Some potential future enhancements include:
 
 1. **Room-Based Collaboration**:
+
    - Support for multiple virtual rooms for different purposes, such as casual hangouts or important meetings.
 
 2. **User Authentication**:
+
    - Adding a login system to enable persistent user states, such as saved positions and settings.
 
 3. **Proximity-Based Voice Chat**:
+
    - Limit voice chat to users within a certain proximity for realistic spatial audio interaction.
 
 4. **Dynamic Events**:
+
    - Change the virtual environment dynamically during special events like career fairs or game nights.
 
 5. **Customizable Maps**:
