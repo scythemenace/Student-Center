@@ -24,7 +24,7 @@ The inspiration for this project stems from the need to bridge the gap in access
 Viniculum is a **real-time collaborative environment** built using modern web technologies. It supports multiple users interacting within a shared virtual space. Users can:
 
 - Move their avatars within the environment in real time, with movements synchronized using **WebSockets**.
-- Engage in voice chat with others using **WebRTC**.
+- Engage in voice chat with others using **WebRTC** (requires further improvements).
 - Enjoy seamless interaction powered by efficient and scalable web frameworks.
 
 This application is designed to enhance virtual collaboration and engagement by providing a highly interactive and customizable environment.
